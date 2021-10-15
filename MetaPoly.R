@@ -1,74 +1,97 @@
 library(vcfR)
 library(ape)
 library(stringr)
+library(data.table)
 
 ################# GET DATA PER GENE ################# 
-gff_to_gene_data <- function(gff, alleles){
-  gene_id = substring(strsplit(gff$V9, ';')[[1]][1], 4)
-  gene_contig = gff$V1
-  gene_start = gff$V4
-  gene_end = gff$V5
+gff_to_gene_data <- function(gff, gene_data){
+  gene_id = substring(strsplit(gff$ATTRIBUTES, ';')[[1]][1], 4)
+  gene_contig = gff$CONTIG
+  gene_start = gff$START
+  gene_end = gff$END
+  
+  cols = colnames(gene_data)[!(colnames(gene_data) %in% c('POS','CONTIG','rn'))]
+  for (j in cols) set(gene_data, j = j, value = lapply(strsplit(gene_data[[j]], ','), as.integer))
+  
   return(list(gene_id = gene_id,
               gene_contig = gene_contig,
               gene_start = gene_start,
               gene_end = gene_end,
               gene_length = gene_end - gene_start,
-              gene_data = alleles[(as.character(alleles$contig) == gene_contig) & (as.integer(alleles$pos) > gene_start) & (as.integer(alleles$pos) < gene_end),]))}
+              gene_data = gene_data))}
 
-get_genes_data <- function(gff, alleles){
-  genes = lapply(1:nrow(gff), function(i) gff_to_gene_data(gff[i,], alleles))
-  return(genes)}
+GetGenesData <- function(gff, vcf){
+  t0 = Sys.time()
+  # Load gff and vcf, convert to data.table, get pos of the VCF variants
+  print('Launching - MetaPoly GetGeneData: loading VCF and GFF data...')
+
+  print('   - Formatting GFF file...')
+  colnames(gff) = c('CONTIG','ANNOT','TYPE','START','END','SCORE','STRAND','PHASE','ATTRIBUTES')
+  gff$GENE = vapply(gff$ATTRIBUTES, function(x) strsplit(strsplit(x, ';')[[1]][1], 'ID=')[[1]][2], FUN.VALUE = character(1))
+  print(Sys.time()-t0)
+  
+  print('   - Extracting allele depths per site...')
+  vcf <- extract.indels(vcf, return.indels = FALSE)
+  samples = colnames(vcf@gt)[colnames(vcf@gt) != 'FORMAT']
+  data <- as.data.table(extract.gt(vcf, element = 'AD'), keep.rownames=TRUE)
+  data[,POS := vapply(data[['rn']], function(x) as.integer(strsplit(x,'_')[[1]][3]), FUN.VALUE = integer(1))]
+  data[,CONTIG := vapply(data[['rn']], function(x) sub("_[^_]+$", "",x), FUN.VALUE = character(1))]
+
+  print(Sys.time()-t0)
+  
+  # Create data per gene
+  print('   - Gathering data per gene...')
+  n_genes <- nrow(gff)
+  genes_data = lapply(1:n_genes, function(i) gff_to_gene_data(gff[i,], data[which((CONTIG==gff$CONTIG[i]) & (POS > gff$START[i]) & (POS < gff$END[i]))]))
+  print(Sys.time()-t0)
+  print(' - Data loaded!')
+  return(genes_data)}
+
+################# COMPUTE SNP density ################# 
+GetDepth <- function(gene_data){
+  return(colMeans(apply(gene_data, c(1,2), function(x) sum(unlist(x)))))}
+
+GetSnpN <- function(gene_data){
+  return(colSums(apply(gene_data, c(1,2), function(x) ifelse(length(x[[1]][x[[1]] > 0]), 1, 0))))}
+
+fit_cor_gene <- function(gene_data, gene, min_samp_per_group, samp_vec){
+  cor_test = cor.test(gene_data$res_m, gene_data$variable)
+  p = as.numeric(cor_test$p.value)
+  cor = as.numeric(cor_test$estimate)
+  mean_coef = mean(gene_data$res_m, na.rm=T)
+  low_ci = cor_test$conf.int[1]
+  high_ci = cor_test$conf.int[2]
+  return(data.frame(gene_id=gene, cor=cor, p=p, mean_coef=mean_coef, low_ci=low_ci, high_ci=high_ci))}
 
 
-################# COMPUTE PI ################# 
-is_polymorphic <- function(char){
-  n_all = as.integer(unique(strsplit(char,',')[[1]]))
-  n_all = n_all[n_all > 0]
-  if (length(n_all) > 1){return(TRUE)}
-  else {return(FALSE)}}
-
-mean_depth <- function(char){
-  return(mean(as.integer(strsplit(char,',')[[1]])))}
-
-calc_pi_gene <- function(gene_data, sample, group, gene_id, gene_length){
-  pi = sum(vapply(gene_data[,sample], function(x) is_polymorphic(x), logical(1)))
-  depth = sum(vapply(gene_data[,sample], function(x) mean_depth(x), double(1)))
-  pi_df = data.frame(pi=pi, depth=depth, sample=sample, group=group, gene_id=gene_id, gene_length=gene_length)
-  return(pi_df)}
-
-fit_cor_gene <- function(gene_df, gene, min_samp_per_group, group1, group2){
-  gene_data = full_pi_df[full_pi_df$gene_id == gene,]
-  gene_data$type[gene_data$type == group1] = '1'
-  gene_data$type[gene_data$type == group2] = '0'
-  gene_data$type = as.integer(as.numeric(gene_data$type))
-  if ((sum(gene_data$type == 1) > min_samp_per_group) & (sum(gene_data$type == 0) > min_samp_per_group)){
-    cor_test = cor.test(gene_data$res_m, gene_data$type)
-    p = as.numeric(cor_test$p.value)
-    cor = as.numeric(cor_test$estimate)
-    mean_coef = mean(gene_data$res_m, na.rm=T)}
-  else{p = NA
-  cor = NA
-  mean_coef = NA}
-  return(data.frame(gene_id=gene, cor=cor, p=p, mean_coef=mean_coef))}
-
-PiCorr <- function(alleles_genes, min_samp_per_group, samp_vec, group1, group2){
+PiCorr <- function(data, min_samp_per_group, samp_vec){
   print('Launching - MetaPoly PiCorr: a polymorphism-variable correlation tool for metagenomic data')
   t0 = Sys.time()
   
-  print(' - Computing nuc. diversity (pi) per gene, per sample...')
-  pi_iter = expand.grid(1:length(alleles_genes), samp_vec)
-  pi_df = as.data.frame(do.call(rbind,lapply(1:nrow(pi_iter), function(i) calc_pi_gene(alleles_genes[[pi_iter$Var1[i]]]$gene_data, pi_iter$Var2[i], names(samp_vec)[samp_vec == pi_iter$Var2[i]], alleles_genes[[pi_iter$Var1[i]]]$gene_id, alleles_genes[[pi_iter$Var1[i]]]$gene_length))))
-  print(pi_df)
+  print(' - Computing SNP density and depth...')
+  model_df = data.frame()
+  cols = as.vector(samp_vec)
+  count=0
+  for (i in 1:length(data)){
+      count = count +  1
+      cat("\r",count)
+      if (nrow(data[[i]]$gene_data) > 0){model_df = rbind(model_df , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
+                                                                                sample = as.vector(samp_vec),
+                                                                                variable = as.integer(names(samp_vec)),
+                                                                                snp_den = as.vector(GetSnpN(data[[i]]$gene_data[,..cols])),
+                                                                                depth = as.vector(GetDepth(data[[i]]$gene_data[,..cols])),
+                                                                                gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
+  cat(' genes done\n')
+  print(model_df)
   print(Sys.time() - t0)
   
   print(' - Fitting the poisson model on data...')
-  model = glm(data = pi_df, family = poisson(), formula = pi ~ depth + gene_length + sample, control = list(maxit = 10))
+  model = glm(data = model_df, family = poisson(), formula = snp_den ~ depth + gene_length + sample, control = list(maxit = 100))
   summary(model)
-  pi_df$res_m = model$residuals
+  model_df$res_m = model$residuals
   print(Sys.time() - t0)
   
-  # samples coefficients
-  print(' - Gathering coefficients per samples...')
+  print(' - Computing sample coefficients...')
   coefs = coefficients(model)
   coefs = coefs[startsWith(names(coefs),'sample')]
   coefs_df = as.data.frame(coefs)
@@ -77,12 +100,15 @@ PiCorr <- function(alleles_genes, min_samp_per_group, samp_vec, group1, group2){
   print(Sys.time() - t0)
   
   print(' - Computing correlations of polymorphism with the variables of interest per gene...')
-  corr_df = na.omit(do.call(rbind, lapply(unique(pi_df$gene_id), function(gene) fit_cor_gene(pi_df, gene, min_samp_per_group, group1, group2))))
+  corr_df = do.call(rbind, lapply(unique(model_df$gene_id), function(gene) fit_cor_gene(model_df[model_df$gene_id == gene,], gene, min_samp_per_group, samp_vec)))
   corr_df$padj = p.adjust(corr_df$p, method = 'holm')
-  sign_genes = na.omit(corr_df[corr_df$padj < 0.05,])
-  pos_genes = sign_genes$gene_id[sign_genes$cor > 0]
-  neg_genes = sign_genes$gene_id[sign_genes$cor < 0]
+  sign_genes = corr_df[corr_df$padj < 0.05,]
+  pos_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor > 0]))
+  neg_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor < 0]))
   print(Sys.time() - t0)
   
   print(' - Analysis done!')
   return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
+
+
+
