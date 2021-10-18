@@ -2,7 +2,6 @@ library(vcfR)
 library(ape)
 library(stringr)
 library(data.table)
-library(pscl)
 library(ggplot2)
 library(ggpubr)
 library(ggsci)
@@ -51,7 +50,7 @@ GetGenesData <- function(gff, vcf){
   print(' - Data loaded!')
   return(genes_data)}
 
-################# COMPUTE SNP density ################# 
+################# SNP density ################# 
 GetDepth <- function(gene_data){
   return(colMeans(apply(gene_data, c(1,2), function(x) sum(unlist(x)))))}
 
@@ -141,7 +140,7 @@ PlotPiCorr <- function(res_df, coefs_df, plots_name, binomial_var = TRUE){
         scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
     ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
 
-################ FUnction enrichment analysis ########
+################ Function enrichment analysis ########
 CalcEnrichment <- function(gff, gene_list, cog_table){
   gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
   gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
