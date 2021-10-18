@@ -80,12 +80,12 @@ PiCorr <- function(data, min_samp_per_group, samp_vec){
       cat("\r",count)
       if (nrow(data[[i]]$gene_data) > 0){model_df = rbind(model_df , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
                                                                                 sample = as.vector(samp_vec),
-                                                                                variable = as.integer(names(samp_vec)),
+                                                                                variable = as.numeric(names(samp_vec)),
                                                                                 snp_den = as.vector(GetSnpN(data[[i]]$gene_data[,..cols])),
                                                                                 depth = as.vector(GetDepth(data[[i]]$gene_data[,..cols])),
                                                                                 gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
-  print(model_df)
+  model_df = model_df[model_df$depth>0,]
   print(Sys.time() - t0)
   
   print(' - Fitting the poisson model on data...')
@@ -99,7 +99,7 @@ PiCorr <- function(data, min_samp_per_group, samp_vec){
   coefs = coefs[startsWith(names(coefs),'sample')]
   coefs_df = as.data.frame(coefs)
   rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, 'sample')[[1]][2], FUN.VALUE = character(1))
-  coefs_df$type = vapply(rownames(coefs_df), function(x) names(samp_vec)[samp_vec == x], character(1))
+  coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
   print(Sys.time() - t0)
   
   print(' - Computing correlations of polymorphism with the variables of interest per gene...')
@@ -133,12 +133,13 @@ PlotPiCorr <- function(res_df, coefs_df, plots_name, binomial_var = TRUE){
   
   # Plot the coefficients
   if (binomial_var == TRUE){
-    ggplot(coefs_df, aes(x=type,y=coefs,color=type)) + geom_boxplot() + theme_minimal() + 
+    ggplot(coefs_df, aes(x=as.factor(type),y=coefs,color=as.factor(type))) + geom_boxplot() + theme_minimal() + 
       stat_compare_means() + scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
-    ggsave(paste0(plots_name,'_res','/',plots_name,'coefficients.pdf'), width = 3, height = 4)}
-  else {ggplot(coefs_df, aes(x=type,y=coefs,color=type)) + geom_point() + theme_minimal() + geom_smooth() +
-      scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
-    ggsave(paste0(plots_name,'_res','/',plots_name,'coefficients.pdf'), width = 3, height = 4)}}
+    ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}
+  
+  else {ggplot(coefs_df, aes(x=type,y=coefs)) + geom_point() + theme_minimal() + geom_smooth() +
+        scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
+    ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
 
 ################ FUnction enrichment analysis ########
 CalcEnrichment <- function(gff, gene_list, cog_table){
