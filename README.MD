@@ -1,4 +1,4 @@
-# MetaPoly
+# MetaPoly
 ## An R framework to analyse metagenomic polymorphism data
 ### 1. The framework
 - Analysis of GFF and VCF formatted data in R
