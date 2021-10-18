@@ -24,7 +24,7 @@ data = GetGenesData(gff, vcf)
 
 ### 3. Run the PiCorr algorithm on the formatted data, plotting the results
 ```
-# We create a binomial {0,1} variabl to correlate with the SNP density
+# We create a binomial {0,1} variable to correlate with the SNP density
 samples = colnames(data[[1]]$gene_data)[2:62]
 names(samples) = ifelse(startsWith(samples, 'GL_R'), 1, 0)
 rock_sed_res = PiCorr(data, 4, samples)
