@@ -2,6 +2,10 @@ library(vcfR)
 library(ape)
 library(stringr)
 library(data.table)
+library(pscl)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
 
 ################# GET DATA PER GENE ################# 
 gff_to_gene_data <- function(gff, gene_data){
@@ -86,7 +90,7 @@ PiCorr <- function(data, min_samp_per_group, samp_vec){
   
   print(' - Fitting the poisson model on data...')
   model = glm(data = model_df, family = poisson(), formula = snp_den ~ depth + gene_length + sample, control = list(maxit = 100))
-  summary(model)
+  print(summary(model))
   model_df$res_m = model$residuals
   print(Sys.time() - t0)
   
@@ -108,6 +112,33 @@ PiCorr <- function(data, min_samp_per_group, samp_vec){
   
   print(' - Analysis done!')
   return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
+
+PlotPiCorr <- function(res_df, coefs_df, plots_name, binomial_var = TRUE){
+  dir.create(paste0(plots_name,'_res'))
+  
+  res_df$Significant = 'No'
+  res_df$Significant[res_df$padj < 0.05] = 'Yes'
+  
+  # Plot the distribution of correlations
+  ggplot(res_df, aes(x=cor,fill=Significant)) + geom_histogram() + theme_minimal() +
+    geom_vline(aes(xintercept=mean(res_df$cor, na.rm = T)), linetype="dashed") + 
+    geom_vline(aes(xintercept=0), color='darkgrey', linetype="dashed") + 
+    xlab('Correlation coef.') + scale_fill_jco() 
+  ggsave(paste0(plots_name,'_res','/',plots_name,'_dist.pdf'), width = 4, height = 4)
+  
+  # Plot the distribution of p-values
+  ggplot(res_df, aes(x=padj,fill=Significant)) + geom_histogram() + theme_minimal() + 
+    xlab('Adjusted p.') + scale_fill_jco() 
+  ggsave(paste0(plots_name,'_res','/',plots_name,'_padj.pdf'), width = 4, height = 4)
+  
+  # Plot the coefficients
+  if (binomial_var == TRUE){
+    ggplot(coefs_df, aes(x=type,y=coefs,color=type)) + geom_boxplot() + theme_minimal() + 
+      stat_compare_means() + scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
+    ggsave(paste0(plots_name,'_res','/',plots_name,'coefficients.pdf'), width = 3, height = 4)}
+  else {ggplot(coefs_df, aes(x=type,y=coefs,color=type)) + geom_point() + theme_minimal() + geom_smooth() +
+      scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
+    ggsave(paste0(plots_name,'_res','/',plots_name,'coefficients.pdf'), width = 3, height = 4)}}
 
 ################ FUnction enrichment analysis ########
 CalcEnrichment <- function(gff, gene_list, cog_table){
