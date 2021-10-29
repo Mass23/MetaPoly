@@ -28,9 +28,9 @@ GetGenesData <- function(gff, vcf){
   print(Sys.time()-t0)
   
   print('   - Extracting allele depths per site...')
-  vcf <- extract.indels(vcf, return.indels = FALSE)
+  vcf <- vcfR::extract.indels(vcf, return.indels = FALSE)
   samples = colnames(vcf@gt)[colnames(vcf@gt) != 'FORMAT']
-  data <- as.data.table(extract.gt(vcf, element = 'AD'), keep.rownames=TRUE)
+  data <- data.table::as.data.table(vcfR::extract.gt(vcf, element = 'AD'), keep.rownames=TRUE)
   data[,POS := vapply(data[['rn']], function(x) as.integer(strsplit(x,'_')[[1]][3]), FUN.VALUE = integer(1))]
   data[,CONTIG := vapply(data[['rn']], function(x) sub("_[^_]+$", "",x), FUN.VALUE = character(1))]
 

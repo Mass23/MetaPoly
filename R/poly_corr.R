@@ -1,39 +1,29 @@
-library(vcfR)
-library(ape)
-library(stringr)
-library(data.table)
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
-library(compositions)
-library(seqinr)
-
 cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
-                     'A'='RNA processing and modification',
-                     'K'='Transcription',
-                     'L'='Replication, recombination and repair',
-                     'B'='Chromatin structure and dynamics',
-                     'D'='Cell cycle control, cell division, chromosome partitioning',
-                     'Y'='Nuclear structure',
-                     'V'='Defense mechanisms',
-                     'T'='Signal transduction mechanisms',
-                     'M'='Cell wall/membrane/envelope biogenesis',
-                     'N'='Cell motility',
-                     'Z'='Cytoskeleton',
-                     'W'='Extracellular structures',
-                     'U'='Intracellular trafficking, secretion, and vesicular transport',
-                     'O'='Posttranslational modification, protein turnover, chaperones',
-                     'X'='Mobilome: prophages, transposons',
-                     'C'='Energy production and conversion',
-                     'G'='Carbohydrate transport and metabolism',
-                     'E'='Amino acid transport and metabolism',
-                     'F'='Nucleotide transport and metabolism',
-                     'H'='Coenzyme transport and metabolism',
-                     'I'='Lipid transport and metabolism',
-                     'P'='Inorganic ion transport and metabolism',                     
-                     'Q'='Secondary metabolites biosynthesis, transport and catabolism',
-                     'R'='General function prediction only',
-                     'S'='Function unknown')
+                  'A'='RNA processing and modification',
+                  'K'='Transcription',
+                  'L'='Replication, recombination and repair',
+                  'B'='Chromatin structure and dynamics',
+                  'D'='Cell cycle control, cell division, chromosome partitioning',
+                  'Y'='Nuclear structure',
+                  'V'='Defense mechanisms',
+                  'T'='Signal transduction mechanisms',
+                  'M'='Cell wall/membrane/envelope biogenesis',
+                  'N'='Cell motility',
+                  'Z'='Cytoskeleton',
+                  'W'='Extracellular structures',
+                  'U'='Intracellular trafficking, secretion, and vesicular transport',
+                  'O'='Posttranslational modification, protein turnover, chaperones',
+                  'X'='Mobilome: prophages, transposons',
+                  'C'='Energy production and conversion',
+                  'G'='Carbohydrate transport and metabolism',
+                  'E'='Amino acid transport and metabolism',
+                  'F'='Nucleotide transport and metabolism',
+                  'H'='Coenzyme transport and metabolism',
+                  'I'='Lipid transport and metabolism',
+                  'P'='Inorganic ion transport and metabolism',                     
+                  'Q'='Secondary metabolites biosynthesis, transport and catabolism',
+                  'R'='General function prediction only',
+                  'S'='Function unknown')
 
 ################# GET DATA PER GENE ################# 
 gff_to_gene_data <- function(gff, gene_data){
@@ -219,158 +209,6 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   else {ggplot(coefs_df, aes(x=type,y=coefs)) + geom_point() + theme_minimal() + geom_smooth() +
         scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
     ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
-
-################# MKTEST ################# 
-calc_dn_ds_pn_ps <- function(gene_data, gene_seq, gene_strand, gene_start, gene_end, min_depth, samp_vec, alleles_data){
-  for (i in 1:nrow(gene_data)){
-    snp_data = gene_data[i,]
-    
-    # get the codon position and snp pos in codon
-    codon_n = floor((snp_data[['POS']] - gene_start) / 3)
-    codon_start = codon_n*3
-    codon_end = (codon_n*3)+2
-    pos_snp = snp_data[['POS']] - gene_start
-    pos_in_codon = (3*((pos_snp/3) - floor(pos_snp/3)) ) + 1
-    ref_codon = gene_seq[codon_start:codon_end]
-    if (gene_strand == '-'){ref_codon = rev(ref_codon)}
-    
-    # get the amino acids for each allele
-    alleles = lapply(alleles_data$alleles[(alleles_data$CHROM == snp_data$CONTIG) & (alleles_data$POS == snp_data$POS)], tolower)
-    amino_acids = unlist(lapply(alleles[[1]], function(x)translate(replace(ref_codon,pos_in_codon,x))))
-    print(amino_acids)
-    
-  }
-}
-
-MKTest <- function(data, vcf, min_depth = 10, samp_vec, fasta){
-  print('Launching - MetaPoly MKTest: a McDonald-Kreitman test tool for metagenomic data')
-  t0 = Sys.time()
-  
-  print(' - Loading fasta and GFF data')
-  fasta_loaded = read.fasta(fasta)
-  alleles_data = as.data.frame(vcf@fix)[,c('CHROM','POS','REF','ALT')]
-  alleles_data$POS = as.integer(alleles_data$POS)
-  
-  print(' - Computing dn, ds, pn ,ps...')
-  mk_df = data.frame()
-  cols = as.vector(samp_vec)
-  count=0
-  for (i in 1:10){
-    count = count +  1
-    cat("\r",count)
-    if (nrow(data[[i]]$gene_data) > 0){
-      # Subset snps in the gene
-      alleles_data_sub = alleles_data[(alleles_data$CHROM == data[[i]]$gene_contig) & (alleles_data$POS > data[[i]]$gene_start) & (alleles_data$POS < data[[i]]$gene_end),]
-      alleles_data_sub$snp = vapply(1:nrow(alleles_data_sub), function(i) paste(alleles_data_sub$CHROM[i], alleles_data_sub$POS[i], sep = '_'), FUN.VALUE = character(1))
-      alleles_data_sub$alleles = strsplit(paste0(alleles_data_sub$REF, alleles_data_sub$ALT),'')
-      alleles_data_sub = alleles_data_sub[alleles_data_sub$snp %in% data[[i]]$gene_data[['rn']],]
-
-      gene_seq = getSequence(fasta_loaded[data[[i]]$gene_contig])[[1]][data[[i]]$gene_start:data[[i]]$gene_end]
-      gene_res = calc_dn_ds_pn_ps(data[[i]]$gene_data, gene_seq, data[[i]]$gene_strand, data[[i]]$gene_start, data[[i]]$gene_end, min_depth, samp_vec, alleles_data_sub)
-      mk_df = rbind(mk_df , data.frame(gene_id = data[[i]]$gene_id,
-                                       dn = gene_res$dn,
-                                       ds = gene_res$ds,
-                                       pn = gene_res$pn,
-                                       ps = gene_res$ps,
-                                       mk = (gene_res$dn / gene_res$ds) / (gene_res$pn / gene_res$ps),
-                                       gene_length = data[[i]]$gene_length))}}
-  cat(' genes done\n')
-  print(' - Analysis done!')
-  return(mk_df)}
-
-
-#data_mt = GetGenesData(gff, vcf)
-#MKTest(data_mt, vcf, min_depth = 10, samples_vec, 'Bio17-1_NCBI.fa')
-
-
-
-
-
-
-################# DELTALLELE ################# 
-
-#CalcDiffAFS <- function(data, samp1, samp2){
-#  return(vapply(1:length(samp1),))}
-
-#GetAFSDiff <- function(gene_data, pop1, pop2, comb_n){
-#  gene_data = apply(gene_data, c(1,2), function(x) clr(x[[1]]))
-#  combinations = combn(c(pop1,pop2),2, function(x) )
-#  
-#  return()}
-
-deltAllele <- function(data, min_samp_per_group, samp_vec){
-  print('Launching - MetaPoly DeltAllele: an allele frequency difference tool for metagenomic data')
-  t0 = Sys.time()
-  
-  print(' - Computing SNP density and depth...')
-  model_df = data.frame()
-  cols = as.vector(samp_vec)
-  count=0
-  for (i in 1:length(data)){
-    count = count +  1
-    cat("\r",count)
-    if (nrow(data[[i]]$gene_data) > 0){model_df = rbind(model_df , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
-                                                                              sample = as.vector(samp_vec),
-                                                                              variable = as.numeric(names(samp_vec)),
-                                                                              AFS_diff = as.vector(GetAFSDiff(data[[i]]$gene_data[,..cols])),
-                                                                              depth = as.vector(GetDepth(data[[i]]$gene_data[,..cols])),
-                                                                              gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
-  cat(' genes done\n')
-  model_df = model_df[model_df$depth>0,]
-  print(Sys.time() - t0)
-  
-  print(' - Fitting the poisson model on data...')
-  model = glm(data = model_df, family = poisson(), formula = AFS_diff ~ depth + gene_length + sample, control = list(maxit = 100))
-  print(summary(model))
-  model_df$res_m = model$residuals
-  print(Sys.time() - t0)
-  
-  print(' - Computing sample coefficients...')
-  coefs = coefficients(model)
-  coefs = coefs[startsWith(names(coefs),'sample')]
-  coefs_df = as.data.frame(coefs)
-  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, 'sample')[[1]][2], FUN.VALUE = character(1))
-  coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
-  print(Sys.time() - t0)
-  
-  print(' - Computing correlations of polymorphism with the variables of interest per gene...')
-  corr_df = do.call(rbind, lapply(unique(model_df$gene_id), function(gene) fit_cor_gene(model_df[model_df$gene_id == gene,], gene, min_samp_per_group, samp_vec)))
-  corr_df$padj = p.adjust(corr_df$p, method = 'holm')
-  sign_genes = corr_df[corr_df$padj < 0.05,]
-  pos_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor > 0]))
-  neg_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor < 0]))
-  print(Sys.time() - t0)
-  
-  print(' - Analysis done!')
-  return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
-
-################# EVENNESS ################# 
-
-
-EvenCalc <- function(data, samp_vec){
-  print('Launching - MetaPoly EVENNESS: a polymorphism quantification tool for metagenomic data')
-  t0 = Sys.time()
-  
-  print(' - Computing Evenness and SNP density...')
-  evenness_df = data.frame()
-  cols = as.vector(samp_vec)
-  count=0
-  for (i in 1:length(data)){
-    count = count +  1
-    cat("\r",count)
-    if (nrow(data[[i]]$gene_data) > 0){snp_res = GetSnpN(data[[i]]$gene_data[,..cols])
-      evenness_df = rbind(evenness_df, data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
-                                                  sample = as.vector(samp_vec),
-                                                  variable = as.numeric(names(samp_vec)),
-                                                  evenness_poly = as.vector(GetEvenness(data[[i]]$gene_data[,..cols])),
-                                                  MAF = as.vector(GetMAF(data[[i]]$gene_data[,..cols])),
-                                                  snp_n = snp_res$snp_n,
-                                                  depth = snp_res$depth,
-                                                  gene_length = rep(as.integer(data[[i]]$gene_length),length(samp_vec))))}}
-  cat(' genes done\n')
-  evenness_df$prop_poly = evenness_df$snp_n / evenness_df$gene_length
-  print(' - Analysis done!')
-  return(evenness_df)}
 
 ################ ENRICH ########
 CalcEnrichment <- function(gff, gene_list, cog_table){
