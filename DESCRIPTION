@@ -1,0 +1,21 @@
+Package: MetaPoly
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person("Massimo", "Bourquin", , "massimo.bourquin@epfl.ch", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-4187-7485"))
+Description: The MetaPoly aims at describing from a population genomic point of view metagenomics data. For this, several methods are developed to analyse the occurrence of polymorphism, the allele frequencies variations, along with positive selection inferences.
+License: `use_mit_license()`
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Imports:
+	vcfR
+	ape
+	stringr
+	data.table
+	ggplot2
+	ggpubr
+	ggsci
+	compositions
+	seqinr
