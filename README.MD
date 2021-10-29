@@ -1,12 +1,7 @@
 # MetaPoly
 ## An R framework to analyse metagenomic polymorphism data
-### 1. The framework
 - Analysis of GFF and VCF formatted data in R
 - In these format, columns are usually considered as individuals, here we consider the columns as the SFS for a given metagenomic sample (=population)
-
-### 2. PiCorr: A correlation based approach to identify selective sweeps by comparing polymorphism patterns across samples
-
-Example:
 
 ### 1. Load data
 ```
@@ -22,17 +17,17 @@ gff = gff[gff$V3 == 'CDS',]
 data = GetGenesData(gff, vcf)
 ```
 
-### 3. Run the PiCorr algorithm on the formatted data, plotting the results
+### 3. PolyCorr: A correlation based approach to identify patterns of polymorphism across metagenomic samples
 ```
-# We create a binomial {0,1} variable to correlate with the SNP density
+# We create a binomial {0,1} variable to correlate with the SNP number
 samples = colnames(data[[1]]$gene_data)[2:62]
 names(samples) = ifelse(startsWith(samples, 'GL_R'), 1, 0)
-rock_sed_res = PiCorr(data, 4, samples)
+rock_sed_res = PolyCorr(data, 4, samples)
 
-PlotPiCorr(rock_sed_res$pi_corr_res, rock_sed_res$coefs, 'Rock_sed', binomial_var = TRUE)
+PlotPolyCorr(rock_sed_res$pi_corr_res, rock_sed_res$coefs, 'Rock_sed', binomial_var = TRUE)
 ```
 
-### 4. Functional enrichment analysis
+Functional enrichment analysis:
 ```
 # load the COG categories data
 cog_func = read.table('cog-20.def.tab', sep='\t')
@@ -58,3 +53,5 @@ neg_enrich_df[neg_enrich_df$padj < 0.05,]
 # odds ratio24        J 2.159340e-10 0.1118691 0.03910910 0.2615571 1.079670e-08
 # odds ratio39        O 2.410850e-06 0.1635080 0.05613308 0.3935008 1.157208e-04
 ```
+
+### 4. EvenNess: calculation of polymorphic sites alleles evenness
