@@ -18,9 +18,10 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(data_mt, 4, samples_vec)
+mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
-mt_poly_f = mt_poly[mt_poly$DEPTH > 0,]
+
+
 
 mt_poly_f$CONS_INDEX = ((mt_poly_f$gene_length - mt_poly_f$SNP_N)/mt_poly_f$gene_length) + (mt_poly_f$SNP_N/mt_poly_f$gene_length*mt_poly_f$MAJF)
 
@@ -55,7 +56,7 @@ ggplot(metadata, aes(x=Date,y=Even_mod,color=Season)) + geom_point()
 
 library(pscl)
 library(ggplot2)
-snp_n_mod <- zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = mt_poly_f)
+snp_n_mod <- 
 summary(snp_n_mod)
 
 coefs = snp_n_mod$coefficients$count

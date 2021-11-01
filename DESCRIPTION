@@ -20,4 +20,5 @@ Imports:
     ggpubr (== 0.4.0), 
     ggsci (== 2.9), 
     compositions (== 2.0-2), 
-    seqinr (== 4.2-8)
+    seqinr (== 4.2-8),
+    pscl

@@ -17,9 +17,10 @@ PolyCorr <- function(data, min_samp, samp_vec){
   t0 = Sys.time()
   print(Sys.time() - t0)
   
-  print(' - Fitting the poisson model on data...')
+  print(' - Fitting a zero-inflated poisson model on the data...')
+  data = as.data.table(data[,colnames(data) %in% c('SNP_N', 'DEPTH', 'gene_length', 'sample', 'gene_id')])
   model_df = data[data$DEPTH>0,]
-  model = glm(data = model_df, family = poisson(), formula = SNP_N ~ log(DEPTH) + gene_length + sample, control = list(maxit = 100))
+  model = zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = model_df)
   print(summary(model))
   model_df$res_m = model$residuals
   print(Sys.time() - t0)
@@ -28,7 +29,7 @@ PolyCorr <- function(data, min_samp, samp_vec){
   coefs = coefficients(model)
   coefs = coefs[startsWith(names(coefs),'sample')]
   coefs_df = as.data.frame(coefs)
-  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, 'sample')[[1]][2], FUN.VALUE = character(1))
+  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, '(sample)')[[1]][2], FUN.VALUE = character(1))
   coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
   print(Sys.time() - t0)
   
