@@ -71,6 +71,7 @@ PolyCorr <- function(data, min_samp, samp_vec){
   print(' - Analysis done!')
   return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
 
+#' @export
 PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   dir.create(paste0(plots_name,'_res'))
   
