@@ -3,8 +3,8 @@ install_github('https://github.com/Mass23/MetaPoly')
 library(MetaPoly)
 
 setwd('~/Documents/PhD/Others/MetaPoly/MetaPoly')
-vcf = read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
-genome = read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
+vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
+genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
 gff <- read.delim("data/WWTP/Bio17-1_NCBI_prokka.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
 
