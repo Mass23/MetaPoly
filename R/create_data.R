@@ -17,6 +17,7 @@ gff_to_gene_data <- function(gff, gene_data){
               gene_length = gene_end - gene_start + 1,
               gene_data = gene_data))}
 
+#' @export
 GetGenesData <- function(gff, vcf){
   t0 = Sys.time()
   # Load gff and vcf, convert to data.table, get pos of the VCF variants
@@ -64,6 +65,7 @@ GetSnpData <- function(gene_data){
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,evenness=evenness,majf=majf))}
 
+#' @export
 PolySummary <- function(data, samp_vec){
   print('Launching - MetaPoly PolySummary: summarising the polymorphism data...')
   t0 = Sys.time()
