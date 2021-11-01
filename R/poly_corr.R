@@ -39,6 +39,7 @@ fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
   return(data.frame(gene_id=gene, cor=cor, p=p, mean_coef=mean_coef, low_ci=low_ci, high_ci=high_ci))}
   else{return(data.frame(gene_id=gene, cor=NA, p=NA, mean_coef=NA, low_ci=NA, high_ci=NA))}}
 
+#' @export
 PolyCorr <- function(data, min_samp, sam){
   print('Launching - MetaPoly PolyCorr: a polymorphism-variable correlation tool for metagenomic data')
   t0 = Sys.time()
