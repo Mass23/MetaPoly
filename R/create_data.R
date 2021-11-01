@@ -87,5 +87,6 @@ PolySummary <- function(data, samp_vec){
                                                                           EVENNESS = snp_data$evenness,
                                                                           gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
+  print(Sys.time()-t0)
   return(PolyDf)}
 

@@ -1,7 +1,7 @@
 library(devtools)
 install_github('https://github.com/Mass23/MetaPoly')
 library(MetaPoly)
-
+setDTthreads(10)
 setwd('~/Documents/PhD/Others/MetaPoly/MetaPoly')
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
@@ -21,13 +21,22 @@ mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
 
 mt_poly_f = mt_poly[mt_poly$DEPTH > 0,]
 
+mt_poly_f$CONS_INDEX = ((mt_poly_f$gene_length - mt_poly_f$SNP_N)/mt_poly_f$gene_length) + (mt_poly_f$SNP_N/mt_poly_f$gene_length*mt_poly_f$MAJF)
+
+mod = lm(data=mt_poly_f,formula =EVENNESS~log(DEPTH)+sample+gene_id)
+coefs = mod$coefficients
+coefs = coefs[startsWith(names(coefs),'sample')]
+names(coefs) = vapply(names(coefs), function(x) strsplit(as.character(x), split='mple')[[1]][2], FUN.VALUE = character(1))
+metadata = metadata[metadata$Sample %in% names(coefs),]
+metadata$Even_mod = vapply(metadata$Sample, function(x) coefs[names(coefs) == x], FUN.VALUE = numeric(1))
+
+ggplot(metadata, aes(x=Date,y=Even_mod,color=Season)) + geom_point()
+
+
 library(pscl)
-library(zoib)
+library(ggplot2)
 snp_n_mod <- zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = mt_poly_f)
 summary(snp_n_mod)
-
-even_mod <- zoib(model= EVENNESS ~ log(DEPTH)+as.factor(sample)|1|1|log(DEPTH)|log(SNP_N) ,data=mt_poly_f)
-summary(mod)
 
 coefs = snp_n_mod$coefficients$count
 coefs = coefs[startsWith(names(coefs),'as.factor(sample)')]
@@ -36,3 +45,6 @@ metadata = metadata[metadata$Sample %in% names(coefs),]
 metadata$SNP_N_COEFS = vapply(metadata$Sample, function(x) coefs[names(coefs) == x], FUN.VALUE = numeric(1))
 
 ggplot(metadata, aes(x=Date,y=SNP_N_COEFS,color=Season)) + geom_point()
+
+
+ggplot(mt_poly_f, aes(x=DEPTH,y=EVENNESS)) + geom_point() + geom_smooth()
