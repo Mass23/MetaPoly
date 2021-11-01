@@ -2,7 +2,6 @@ library(devtools)
 install_github('https://github.com/Mass23/MetaPoly')
 library(MetaPoly)
 
-setDTthreads(8)
 setwd('~/Documents/PhD/Others/MetaPoly/MetaPoly')
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
