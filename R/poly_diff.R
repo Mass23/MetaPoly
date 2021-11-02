@@ -10,7 +10,6 @@ PairFst <- function(data, samp1, samp2, pos){
 
 CalcFst <- function(data, samp_vec){
   n_snp = nrow(data)
-  
   df_within = rbind(expand.grid(samples_vec[names(samples_vec) == 0], samples_vec[names(samples_vec) == 0],1:n_snp),
                     expand.grid(samples_vec[names(samples_vec) == 1], samples_vec[names(samples_vec) == 1],1:n_snp))
   df_between = expand.grid(names(samp_vec)[samp_vec == 0], names(samp_vec)[samp_vec == 1], 1:n_snp)
