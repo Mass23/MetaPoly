@@ -72,7 +72,7 @@ PolyDiff <- function(data, min_samp_per_group, samp_vec){
                                                                               variable = as.numeric(names(samp_vec)),
                                                                               fst = gene_res$mean_fst,
                                                                               depth = gene_res$mean_depth,
-                                                                              gene_length = rep(data[[i]]$gene_length,length(samp_vec)))}}
+                                                                              gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
   fst_df = fst_df[fst_df$depth>0,]
   print(Sys.time() - t0)
