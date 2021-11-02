@@ -3,4 +3,5 @@
 export(GetGenesData)
 export(PlotPolyCorr)
 export(PolyCorr)
+export(PolyDiff)
 export(PolySummary)

@@ -1,31 +1,3 @@
-cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
-                  'A'='RNA processing and modification',
-                  'K'='Transcription',
-                  'L'='Replication, recombination and repair',
-                  'B'='Chromatin structure and dynamics',
-                  'D'='Cell cycle control, cell division, chromosome partitioning',
-                  'Y'='Nuclear structure',
-                  'V'='Defense mechanisms',
-                  'T'='Signal transduction mechanisms',
-                  'M'='Cell wall/membrane/envelope biogenesis',
-                  'N'='Cell motility',
-                  'Z'='Cytoskeleton',
-                  'W'='Extracellular structures',
-                  'U'='Intracellular trafficking, secretion, and vesicular transport',
-                  'O'='Posttranslational modification, protein turnover, chaperones',
-                  'X'='Mobilome: prophages, transposons',
-                  'C'='Energy production and conversion',
-                  'G'='Carbohydrate transport and metabolism',
-                  'E'='Amino acid transport and metabolism',
-                  'F'='Nucleotide transport and metabolism',
-                  'H'='Coenzyme transport and metabolism',
-                  'I'='Lipid transport and metabolism',
-                  'P'='Inorganic ion transport and metabolism',                     
-                  'Q'='Secondary metabolites biosynthesis, transport and catabolism',
-                  'R'='General function prediction only',
-                  'S'='Function unknown')
-
-
 ################# PolyDiff ################# 
 
 PairFst <- function(data, samp1, samp2, pos){
@@ -44,10 +16,8 @@ CalcFst <- function(data, n_snp, samp_vec){
   df_within = df_within[df_within$V1 != df_within$V2]
   df_between = df_between[df_between$V1 != df_between$V2]
   # if more than 100 comparisons, sub sample 
-  if(nrow(df_within) > 100){
-    df_within = df_within[sample(1:norw(df_within),100),]}
-  if(nrow(df_between) > 100){
-    df_between = df_between[sample(1:norw(df_between),100),]}
+  if(nrow(df_within) > 100){df_within = df_within[sample(1:norw(df_within),100),]}
+  if(nrow(df_between) > 100){df_between = df_between[sample(1:norw(df_between),100),]}
   # Calc Fst
   within_res = do.call(rbind, 1:nrow(df_within), function(i) PairFst(data, df_within$V1[i], df_within$V2[i], df_within$V3[i]))
   between_res = do.call(rbind, 1:nrow(df_between), function(i) PairFst(data, df_between$V1[i], df_between$V2[i], df_between$V3[i]))
