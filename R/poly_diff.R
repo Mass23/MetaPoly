@@ -20,8 +20,8 @@ CalcFst <- function(data, samp_vec){
   if(nrow(df_within) > 100){df_within = df_within[sample(1:nrow(df_within),100),]}
   if(nrow(df_between) > 100){df_between = df_between[sample(1:nrow(df_between),100),]}
   # Calc Fst
-  within_res = do.call(rbind, 1:nrow(df_within), function(i) PairFst(data, df_within$V1[i], df_within$V2[i], df_within$V3[i]))
-  between_res = do.call(rbind, 1:nrow(df_between), function(i) PairFst(data, df_between$V1[i], df_between$V2[i], df_between$V3[i]))
+  within_res = do.call(rbind, as.list(1:nrow(df_within)), function(i) PairFst(data, df_within$V1[i], df_within$V2[i], df_within$V3[i]))
+  between_res = do.call(rbind, as.list(1:nrow(df_between)), function(i) PairFst(data, df_between$V1[i], df_between$V2[i], df_between$V3[i]))
   return(list(mean_fst = mean(between_res$fst / within_res$fst), mean_depth = mean(c(within_res$depth_mean, between_res$depth_mean))))
 }
 
