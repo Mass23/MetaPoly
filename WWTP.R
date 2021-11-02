@@ -20,8 +20,9 @@ data_mt = GetGenesData(gff, vcf)
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
 mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
-
-
+# Run Fst analysis on before/after
+samples_vec = metadata$Sample
+names(samples_vec) = metadata$Test
 
 mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + (mt_poly$SNP_N/mt_poly$gene_length*mt_poly$MAJF)
 

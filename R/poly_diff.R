@@ -55,7 +55,7 @@ CalcFst <- function(data, n_snp, samp_vec){
 }
 
 #' @export
-PolyDiff <- function(data, min_samp_per_group, samp_vec){
+PolyDiff <- function(data, samp_vec){
   print('Launching - MetaPoly PolyDiff: an Fst calculatuon tool for metagenomic data')
   t0 = Sys.time()
   
