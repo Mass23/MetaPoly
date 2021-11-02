@@ -26,59 +26,55 @@ cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
                   'S'='Function unknown')
 
 
-################# DELTALLELE ################# 
+################# PolyDiff ################# 
 
-#CalcDiffAFS <- function(data, samp1, samp2){
-#  return(vapply(1:length(samp1),))}
+PairFst <- function(data, samp1, samp2, pos){
+  ac1 = data[[samp1]][[pos]]
+  ac2 = data[[samp2]][[pos]]
+  depth1 = sum(ac1)
+  depth2 = sum(ac2)
+  fst = mean(sample(1:length(ac1), 100, prob = ac1, replace = T) != sample(1:length(ac2), 100, prob = ac2, replace = T))
+  return(data.frame(fst = fst, depth_mean = exp(mean(log(c(depth1,depth2))))))}
 
-#GetAFSDiff <- function(gene_data, pop1, pop2, comb_n){
-#  gene_data = apply(gene_data, c(1,2), function(x) clr(x[[1]]))
-#  combinations = combn(c(pop1,pop2),2, function(x) )
-#  
-#  return()}
+CalcFst <- function(data, n_snp, samp_vec){
+  df_within = rbind(expand.grid(samples_vec[names(samples_vec) == 0], samples_vec[names(samples_vec) == 0],1:n_snp),
+                    expand.grid(samples_vec[names(samples_vec) == 1], samples_vec[names(samples_vec) == 1],1:n_snp))
+  df_between = expand.grid(names(samp_vec)[samp_vec == 0], names(samp_vec)[samp_vec == 1], 1:n_snp)
+  # remove comps of the same sample
+  df_within = df_within[df_within$V1 != df_within$V2]
+  df_between = df_between[df_between$V1 != df_between$V2]
+  # if more than 100 comparisons, sub sample 
+  if(nrow(df_within) > 100){
+    df_within = df_within[sample(1:norw(df_within),100),]}
+  if(nrow(df_between) > 100){
+    df_between = df_between[sample(1:norw(df_between),100),]}
+  # Calc Fst
+  within_res = do.call(rbind, 1:nrow(df_within), function(i) PairFst(data, df_within$V1[i], df_within$V2[i], df_within$V3[i]))
+  between_res = do.call(rbind, 1:nrow(df_between), function(i) PairFst(data, df_between$V1[i], df_between$V2[i], df_between$V3[i]))
+  return(list(mean_fst = mean(between_res$fst / within_res$fst), mean_depth = mean(c(within_res$depth_mean, between_res$depth_mean))))
+}
 
-deltAllele <- function(data, min_samp_per_group, samp_vec){
-  print('Launching - MetaPoly DeltAllele: an allele frequency difference tool for metagenomic data')
+PolyDiff <- function(data, min_samp_per_group, samp_vec){
+  print('Launching - MetaPoly PolyDiff: an Fst calculatuon tool for metagenomic data')
   t0 = Sys.time()
   
-  print(' - Computing SNP density and depth...')
-  model_df = data.frame()
+  print(' - Computing Fst across genes...')
+  fst_df = data.frame()
   cols = as.vector(samp_vec)
   count=0
   for (i in 1:length(data)){
     count = count +  1
     cat("\r",count)
-    if (nrow(data[[i]]$gene_data) > 0){model_df = rbind(model_df , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
+    if (nrow(data[[i]]$gene_data) > 0){gene_res = CalcFst(data[[i]]$gene_data, samp_vec)
+                                       fst_df = rbind(fst_df , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
                                                                               sample = as.vector(samp_vec),
                                                                               variable = as.numeric(names(samp_vec)),
-                                                                              AFS_diff = as.vector(GetAFSDiff(data[[i]]$gene_data[,..cols])),
-                                                                              depth = as.vector(GetDepth(data[[i]]$gene_data[,..cols])),
-                                                                              gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
+                                                                              fst = gene_res$mean_fst,
+                                                                              depth = gene_res$mean_depth,
+                                                                              gene_length = rep(data[[i]]$gene_length,length(samp_vec)))}}
   cat(' genes done\n')
-  model_df = model_df[model_df$depth>0,]
-  print(Sys.time() - t0)
-  
-  print(' - Fitting the poisson model on data...')
-  model = glm(data = model_df, family = poisson(), formula = AFS_diff ~ depth + gene_length + sample, control = list(maxit = 100))
-  print(summary(model))
-  model_df$res_m = model$residuals
-  print(Sys.time() - t0)
-  
-  print(' - Computing sample coefficients...')
-  coefs = coefficients(model)
-  coefs = coefs[startsWith(names(coefs),'sample')]
-  coefs_df = as.data.frame(coefs)
-  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, 'sample')[[1]][2], FUN.VALUE = character(1))
-  coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
-  print(Sys.time() - t0)
-  
-  print(' - Computing correlations of polymorphism with the variables of interest per gene...')
-  corr_df = do.call(rbind, lapply(unique(model_df$gene_id), function(gene) fit_cor_gene(model_df[model_df$gene_id == gene,], gene, min_samp_per_group, samp_vec)))
-  corr_df$padj = p.adjust(corr_df$p, method = 'holm')
-  sign_genes = corr_df[corr_df$padj < 0.05,]
-  pos_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor > 0]))
-  neg_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor < 0]))
+  fst_df = fst_df[fst_df$depth>0,]
   print(Sys.time() - t0)
   
   print(' - Analysis done!')
-  return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
+  return(fst_df}

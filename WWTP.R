@@ -23,7 +23,7 @@ mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
 
 
-mt_poly_f$CONS_INDEX = ((mt_poly_f$gene_length - mt_poly_f$SNP_N)/mt_poly_f$gene_length) + (mt_poly_f$SNP_N/mt_poly_f$gene_length*mt_poly_f$MAJF)
+mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + (mt_poly$SNP_N/mt_poly$gene_length*mt_poly$MAJF)
 
 
 library(bayestestR)
