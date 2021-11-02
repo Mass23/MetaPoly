@@ -78,4 +78,4 @@ PolyDiff <- function(data, min_samp_per_group, samp_vec){
   print(Sys.time() - t0)
   
   print(' - Analysis done!')
-  return(fst_df}
+  return(fst_df)}
