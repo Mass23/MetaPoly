@@ -17,7 +17,7 @@ CalcFst <- function(data, samp_vec){
   df_within = df_within[df_within$V1 != df_within$V2]
   df_between = df_between[df_between$V1 != df_between$V2]
   # if more than 100 comparisons, sub sample 
-  if(nrow(df_within) > 100){df_within = df_within[sample(1:norw(df_within),100),]}
+  if(nrow(df_within) > 100){df_within = df_within[sample(1:nrow(df_within),100),]}
   if(nrow(df_between) > 100){df_between = df_between[sample(1:norw(df_between),100),]}
   # Calc Fst
   within_res = do.call(rbind, 1:nrow(df_within), function(i) PairFst(data, df_within$V1[i], df_within$V2[i], df_within$V3[i]))

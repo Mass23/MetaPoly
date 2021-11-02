@@ -17,8 +17,8 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
+#mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+#mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
 # Run Fst analysis on before/after
 samples_vec = metadata$Sample
