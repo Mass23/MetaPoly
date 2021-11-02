@@ -8,7 +8,9 @@ PairFst <- function(data, samp1, samp2, pos){
   fst = mean(sample(1:length(ac1), 100, prob = ac1, replace = T) != sample(1:length(ac2), 100, prob = ac2, replace = T))
   return(data.frame(fst = fst, depth_mean = exp(mean(log(c(depth1,depth2))))))}
 
-CalcFst <- function(data, n_snp, samp_vec){
+CalcFst <- function(data, samp_vec){
+  n_snp = nrow(data)
+  
   df_within = rbind(expand.grid(samples_vec[names(samples_vec) == 0], samples_vec[names(samples_vec) == 0],1:n_snp),
                     expand.grid(samples_vec[names(samples_vec) == 1], samples_vec[names(samples_vec) == 1],1:n_snp))
   df_between = expand.grid(names(samp_vec)[samp_vec == 0], names(samp_vec)[samp_vec == 1], 1:n_snp)

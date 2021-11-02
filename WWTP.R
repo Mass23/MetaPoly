@@ -24,6 +24,9 @@ mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
 
+mt_fst = PolyDiff(data_mt, samples_vec)
+
+
 mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + (mt_poly$SNP_N/mt_poly$gene_length*mt_poly$MAJF)
 
 
