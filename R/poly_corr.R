@@ -64,25 +64,25 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   res_df$Significant[res_df$padj < 0.05] = 'Yes'
   
   # Plot the distribution of correlations
-  ggplot2::ggplot(res_df, aggplot2::es(x=cor,fill=Significant)) + geom_histogram() + theme_minimal() +
-    geom_vline(ggplot2::aes(xintercept=mean(res_df$cor, na.rm = T)), linetype="dashed") + 
-    geom_vline(ggplot2::aes(xintercept=0), color='darkgrey', linetype="dashed") + 
-    xlab('Correlation coef.') + scale_fill_jco() 
+  ggplot2::ggplot(res_df, aggplot2::es(x=cor,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() +
+    ggplot2::geom_vline(ggplot2::aes(xintercept=mean(res_df$cor, na.rm = T)), linetype="dashed") + 
+    ggplot2::geom_vline(ggplot2::aes(xintercept=0), color='darkgrey', linetype="dashed") + 
+    ggplot2::xlab('Correlation coef.') + ggsci::scale_fill_jco() 
   ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_dist.pdf'), width = 4, height = 4)
   
   # Plot the distribution of p-values
-  ggplot2::ggplot(res_df, ggplot2::aes(x=p,fill=Significant)) + geom_histogram() + theme_minimal() + 
+  ggplot2::ggplot(res_df, ggplot2::aes(x=p,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() + 
     xlab('p') + scale_fill_jco() 
   ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_p.pdf'), width = 4, height = 4)
   
   # Plot the coefficients
   if (boolean_var == TRUE){
-    ggplot2::ggplot(coefs_df, ggplot2::aes(x=as.factor(type),y=coefs,color=as.factor(type))) + geom_boxplot() + theme_minimal() + 
-      stat_compare_means() + scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
+    ggplot2::ggplot(coefs_df, ggplot2::aes(x=as.factor(type),y=coefs,color=as.factor(type))) + ggplot2::geom_boxplot() + ggplot2::theme_minimal() + 
+      ggpubr::stat_compare_means() + ggsci::scale_color_jco() + ggplot2::xlab('Variable') + ggplot2::ylab('Sample coefs.') + ggplot2::theme(legend.position = 'none')
     ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}
   
-  else {ggplot2::ggplot(coefs_df, ggplot2::aes(x=type,y=coefs)) + geom_point() + theme_minimal() + geom_smooth() +
-        scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
+  else {ggplot2::ggplot(coefs_df, ggplot2::aes(x=type,y=coefs)) + ggplot2::geom_point() + ggplot2::theme_minimal() + ggplot2::geom_smooth() +
+        ggsci::scale_color_jco() + ggplot2::xlab('Variable') + ggplot2::ylab('Sample coefs.') + ggplot2::theme(legend.position = 'none')
     ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
 
 ################ ENRICH ########
