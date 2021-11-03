@@ -18,17 +18,45 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
 
+mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
+PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP')
+
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
 
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 mt_fst = PolyDiv(data_mt, samples_vec)
+
+
+PlotPolyCorr()
+
+
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
 cog_func = read.table('data/cog-20.def.tab', sep='\t')
 gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 mt_fst$COG = vapply(mt_fst$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
 mt_fst$COG[is.na(mt_fst$COG)] = 'NoCOG'

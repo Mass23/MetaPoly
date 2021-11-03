@@ -1,21 +1,4 @@
-################# PolyDiff ################# 
-geom_mean <- function(x,na.rm=TRUE){return(exp(mean(log(x),na.rm=na.rm)))}
-
-
-PairPI <- function(data, s1, s2){
-  ac1 = as.integer(data[[as.character(s1)]][[1]])
-  depth1 = sum(ac1)
-  af1 = ac1/depth1
-  ac2 = as.integer(data[[as.character(s2)]][[1]])
-  depth2 = sum(ac2)
-  af2 = ac2/depth2
-  pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-  pi_within = mean(sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T) != sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T))
-  return(data.frame(DEPTH1=depth1, DEPTH2=depth2, DEPTH_GM=geom_mean(depth1, depth2), PI_b=pi_between, PI_w=pi_within))}
-
-CombType <- function(samp_vec, samp1, samp2){
-  if (names(samp_vec)[samp_vec == samp1] == names(samp_vec)[samp_vec == samp2]){return('within')}
-  else{return('between')}}
+################# PolyDiv ################# 
 
 CalcFst <- function(data, samp_vec){
   fst_df = data.frame()
@@ -51,9 +34,18 @@ CalcFst <- function(data, samp_vec){
                                       FST=fst))}
   return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST)))}
 
+#' PolyDiv
+#'
+#' This functions computes Fst at the gene level, between two sets of metagenomic samples. It 
+#' compares the average allele frequencies across samples for each polymorphic site, and then 
+#' outputs the median Fst value. The inputs are:
+#'   - data: the polymorphism data created by MetaPoly's "GetGenesData" function
+#'   - samp_vec: a vector that assigns each sample (vector values) to each population (vector
+#'     names). The method handles two populations encoded as 0 and 1's
+#'
 #' @export
 PolyDiv <- function(data, samp_vec){
-  print('Launching - MetaPoly PolyDiff: an Fst calculatuon tool for metagenomic data')
+  print('Launching - MetaPoly PolyDiv: an Fst calculation tool for metagenomic data')
   t0 = Sys.time()
   
   print(' - Computing Fst across genes...')
@@ -72,7 +64,9 @@ PolyDiv <- function(data, samp_vec){
   print(' - Analysis done!')
   return(fst_df)}
 
-##### Other funcs
+
+
+##### Older funcs
 # computing fst for every pair...
 CalcFstPerSample <- function(data, samp_vec){
   combn_df = as.data.frame(expand.grid(samp_vec, samp_vec))
@@ -90,3 +84,21 @@ CalcFstPerSample <- function(data, samp_vec){
     fst_combn = cbind(fst_combn, res_df)
     full_df = rbind(full_df, fst_combn)}
   return(full_df)}
+
+geom_mean <- function(x,na.rm=TRUE){return(exp(mean(log(x),na.rm=na.rm)))}
+
+
+PairPI <- function(data, s1, s2){
+  ac1 = as.integer(data[[as.character(s1)]][[1]])
+  depth1 = sum(ac1)
+  af1 = ac1/depth1
+  ac2 = as.integer(data[[as.character(s2)]][[1]])
+  depth2 = sum(ac2)
+  af2 = ac2/depth2
+  pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
+  pi_within = mean(sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T) != sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T))
+  return(data.frame(DEPTH1=depth1, DEPTH2=depth2, DEPTH_GM=geom_mean(depth1, depth2), PI_b=pi_between, PI_w=pi_within))}
+
+CombType <- function(samp_vec, samp1, samp2){
+  if (names(samp_vec)[samp_vec == samp1] == names(samp_vec)[samp_vec == samp2]){return('within')}
+  else{return('between')}}

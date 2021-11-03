@@ -11,6 +11,18 @@ fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
   return(data.frame(gene_id=gene, cor=cor, p=p, mean_coef=mean_coef, low_ci=low_ci, high_ci=high_ci))}
   else{return(data.frame(gene_id=gene, cor=NA, p=NA, mean_coef=NA, low_ci=NA, high_ci=NA))}}
 
+#' PolyCorr
+#'
+#' This functions computes the gene-wise correlation between the number of SNPs, and a target 
+#' variable than can be either continuous, either discrete (handles two treatments). It creates
+#' a zero-inflated poisson model of the SNP count, taking the sample, log(sequencing depth), 
+#' and the gene length as fixed effects. The idea is to identify genes showing signs of selective
+#' sweeps associated with the target variable. There are three inputs:
+#'   - data: the polymorphism data created by MetaPoly's "GetGenesData" function
+#'   - min_samp: the minimal number of sample having the required depth to run the correlation test.
+#'   - samp_vec: a vector that assigns each sample (vector values) to each population (vector
+#'     names). The method handles two populations encoded as 0 and 1's.
+#'
 #' @export
 PolyCorr <- function(data, min_samp, samp_vec){
   print('Launching - MetaPoly PolyCorr: a polymorphism-variable correlation tool for metagenomic data')
@@ -52,26 +64,26 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   res_df$Significant[res_df$padj < 0.05] = 'Yes'
   
   # Plot the distribution of correlations
-  ggplot(res_df, aes(x=cor,fill=Significant)) + geom_histogram() + theme_minimal() +
+  ggplot2::ggplot(res_df, aes(x=cor,fill=Significant)) + geom_histogram() + theme_minimal() +
     geom_vline(aes(xintercept=mean(res_df$cor, na.rm = T)), linetype="dashed") + 
     geom_vline(aes(xintercept=0), color='darkgrey', linetype="dashed") + 
     xlab('Correlation coef.') + scale_fill_jco() 
-  ggsave(paste0(plots_name,'_res','/',plots_name,'_dist.pdf'), width = 4, height = 4)
+  ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_dist.pdf'), width = 4, height = 4)
   
   # Plot the distribution of p-values
-  ggplot(res_df, aes(x=p,fill=Significant)) + geom_histogram() + theme_minimal() + 
+  ggplot2::ggplot(res_df, aes(x=p,fill=Significant)) + geom_histogram() + theme_minimal() + 
     xlab('p') + scale_fill_jco() 
-  ggsave(paste0(plots_name,'_res','/',plots_name,'_p.pdf'), width = 4, height = 4)
+  ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_p.pdf'), width = 4, height = 4)
   
   # Plot the coefficients
   if (boolean_var == TRUE){
-    ggplot(coefs_df, aes(x=as.factor(type),y=coefs,color=as.factor(type))) + geom_boxplot() + theme_minimal() + 
+    ggplot2::ggplot(coefs_df, aes(x=as.factor(type),y=coefs,color=as.factor(type))) + geom_boxplot() + theme_minimal() + 
       stat_compare_means() + scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
-    ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}
+    ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}
   
-  else {ggplot(coefs_df, aes(x=type,y=coefs)) + geom_point() + theme_minimal() + geom_smooth() +
+  else {ggplot2::ggplot(coefs_df, aes(x=type,y=coefs)) + geom_point() + theme_minimal() + geom_smooth() +
         scale_color_jco() + xlab('Variable') + ylab('Sample coefs.') + theme(legend.position = 'none')
-    ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
+    ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
 
 ################ ENRICH ########
 CalcEnrichment <- function(gff, gene_list, cog_table){
