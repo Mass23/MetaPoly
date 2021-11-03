@@ -72,7 +72,7 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   
   # Plot the distribution of p-values
   ggplot2::ggplot(res_df, ggplot2::aes(x=p,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() + 
-    xlab('p') + scale_fill_jco() 
+    ggplot2::xlab('p') + ggsci::scale_fill_jco() 
   ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_p.pdf'), width = 4, height = 4)
   
   # Plot the coefficients
