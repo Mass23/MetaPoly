@@ -64,7 +64,7 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   res_df$Significant[res_df$padj < 0.05] = 'Yes'
   
   # Plot the distribution of correlations
-  ggplot2::ggplot(res_df, aggplot2::es(x=cor,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() +
+  ggplot2::ggplot(res_df, ggplot2::aes(x=cor,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() +
     ggplot2::geom_vline(ggplot2::aes(xintercept=mean(res_df$cor, na.rm = T)), linetype="dashed") + 
     ggplot2::geom_vline(ggplot2::aes(xintercept=0), color='darkgrey', linetype="dashed") + 
     ggplot2::xlab('Correlation coef.') + ggsci::scale_fill_jco() 
@@ -72,7 +72,7 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   
   # Plot the distribution of p-values
   ggplot2::ggplot(res_df, ggplot2::aes(x=p,fill=Significant)) + ggplot2::geom_histogram() + ggplot2::theme_minimal() + 
-    xlab('p') + scale_fill_jco() 
+    ggplot2::xlab('p') + ggsci::scale_fill_jco() 
   ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_p.pdf'), width = 4, height = 4)
   
   # Plot the coefficients
