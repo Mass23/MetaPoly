@@ -20,7 +20,7 @@ PolyCorr <- function(data, min_samp, samp_vec){
   print(' - Fitting a zero-inflated poisson model on the data...')
   data = as.data.table(data[,colnames(data) %in% c('SNP_N', 'DEPTH', 'gene_length', 'sample', 'gene_id')])
   model_df = data[data$DEPTH>0,]
-  model = zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = model_df)
+  model = pscl::zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = model_df)
   print(summary(model))
   model_df$res_m = model$residuals
   print(Sys.time() - t0)

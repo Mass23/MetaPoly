@@ -17,13 +17,12 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
-# Run Fst analysis on before/after
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
 
+mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 mt_fst = PolyDiff(data_mt, samples_vec)
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
@@ -33,12 +32,12 @@ gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_fun
 
 mt_fst$COG = vapply(mt_fst$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
 mt_fst$COG[is.na(mt_fst$COG)] = 'NoCOG'
-mt_fst$COG_long = vapply(mt_fst$COG, function(x) ifelse(x == 'NoCog', 'NoCog', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
+mt_fst$COG_long = vapply(mt_fst$COG, function(x) ifelse(x == 'NoCOG', 'NoCOG', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
 mt_fst$fst_norm = mt_fst$FST
-mt_fst$fst_norm[mt_fst$fst_norm < 0] = 
-  
-ggplot(mt_fst, aes(x=FST,y=COG_long)) + geom_boxplot()
+mt_fst$fst_norm[mt_fst$fst_norm < 0] = 0
+ggplot(mt_fst, aes(x=fst_norm,y=COG_long)) + geom_boxplot()
 
+mod = zoib::zoib(model=fst_norm ~ COG_long|1|COG_long|1|1, data=mt_fst)
 
 pvals = c()
 for (sample in unique(test$Var1)){
