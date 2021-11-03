@@ -18,3 +18,7 @@ data = GetGenesData(gff, vcf)
 ```
 
 ### 3. Summarise the polymorphism using MetaPoly's "PolySummary" function
+
+### 4. Detect potential selective sweeps using MetaPoly's "PolyCorr" function
+
+### 5. Analyses changes in allele frequencies using Metapoly's "PolyDiv" function
