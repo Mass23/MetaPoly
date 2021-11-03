@@ -26,7 +26,8 @@ samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
 
 mt_fst = PolyDiv(data_mt, samples_vec)
-
+save.image(file='saved_res')
+load('saved_res')
 
 PlotPolyCorr()
 
