@@ -17,8 +17,8 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
-#mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-#mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
+mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
 
 # Run Fst analysis on before/after
 samples_vec = metadata$Sample
@@ -26,6 +26,32 @@ names(samples_vec) = metadata$Test
 
 mt_fst = PolyDiff(data_mt, samples_vec)
 
+gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
+gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
+cog_func = read.table('data/cog-20.def.tab', sep='\t')
+gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
+
+mt_fst$COG = vapply(mt_fst$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
+mt_fst$COG[is.na(mt_fst$COG)] = 'NoCOG'
+mt_fst$COG_long = vapply(mt_fst$COG, function(x) ifelse(x == 'NoCog', 'NoCog', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
+mt_fst$fst_norm = mt_fst$FST
+mt_fst$fst_norm[mt_fst$fst_norm < 0] = 
+  
+ggplot(mt_fst, aes(x=FST,y=COG_long)) + geom_boxplot()
+
+
+pvals = c()
+for (sample in unique(test$Var1)){
+  for (snp in unique(test$SNP)){
+    pvals = c(pvals, cor.test(test$PI[(test$Var2 == sample) & (test$SNP == snp)], test$DEPTH[(test$Var2 == sample)  & (test$SNP == snp)])$p.value)
+  }
+}
+
+x = glm(formula = PI ~ as.factor(COMP) + as.factor(SNP) + as.factor(Var1) + as.factor(Var2) + DEPTH, data=test, family = quasibinomial(), na.action = na.omit)
+
+
+
+hist(mt_fst$fst)
 
 mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + (mt_poly$SNP_N/mt_poly$gene_length*mt_poly$MAJF)
 
