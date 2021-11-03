@@ -39,7 +39,7 @@ PolyCorr <- function(data, min_samp, samp_vec){
   
   print(' - Computing sample coefficients...')
   coefs = coefficients(model)
-  coefs = coefs[startsWith(names(coefs),'sample')]
+  coefs = coefs[startsWith(names(coefs),'as.factor(sample')]
   coefs_df = as.data.frame(coefs)
   rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, '(sample)')[[1]][2], FUN.VALUE = character(1))
   coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
