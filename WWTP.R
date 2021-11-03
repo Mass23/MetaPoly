@@ -23,7 +23,7 @@ names(samples_vec) = metadata$Test
 
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
 mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
-mt_fst = PolyDiff(data_mt, samples_vec)
+mt_fst = PolyDiv(data_mt, samples_vec)
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
@@ -35,16 +35,21 @@ mt_fst$COG[is.na(mt_fst$COG)] = 'NoCOG'
 mt_fst$COG_long = vapply(mt_fst$COG, function(x) ifelse(x == 'NoCOG', 'NoCOG', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
 mt_fst$fst_norm = mt_fst$FST
 mt_fst$fst_norm[mt_fst$fst_norm < 0] = 0
-ggplot(mt_fst, aes(x=fst_norm,y=COG_long)) + geom_boxplot()
+ggplot(mt_fst, aes(x=fst_norm,y=COG_long)) + geom_boxplot() + scale_x_log10()
 
-mod = zoib::zoib(model=fst_norm ~ COG_long|1|COG_long|1|1, data=mt_fst)
+wilcox_df = data.frame()
+for (cog_func in unique(mt_fst$COG_long)){
+  COG_data = mt_fst$fst_norm[mt_fst$COG_long == cog_func]
+  other_data = mt_fst$fst_norm[mt_fst$COG_long != cog_func]
+  test = wilcox.test(COG_data, other_data)
+  wilcox_df = rbind(wilcox_df, data.frame(COG_long=cog_func, p=test$p.value, W=test$statistic, n = length(COG_data), median=median(COG_data, na.rm = T), mean=mean(COG_data, na.rm = T)))}
+wilcox_df$padj = p.adjust(wilcox_df$p, method = 'fdr')
 
-pvals = c()
-for (sample in unique(test$Var1)){
-  for (snp in unique(test$SNP)){
-    pvals = c(pvals, cor.test(test$PI[(test$Var2 == sample) & (test$SNP == snp)], test$DEPTH[(test$Var2 == sample)  & (test$SNP == snp)])$p.value)
-  }
-}
+
+pos_genes = na.omit(mt_polycorr$pi_corr_res$gene_id[(mt_polycorr$pi_corr_res$padj < 0.05) & (mt_polycorr$pi_corr_res$cor > 0)])
+
+
+
 
 x = glm(formula = PI ~ as.factor(COMP) + as.factor(SNP) + as.factor(Var1) + as.factor(Var2) + DEPTH, data=test, family = quasibinomial(), na.action = na.omit)
 

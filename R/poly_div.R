@@ -49,10 +49,10 @@ CalcFst <- function(data, samp_vec){
                                       PI_B=pi_between,
                                       PI_W=pi_within,
                                       FST=fst))}
-  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=mean(fst_df$FST)))}
+  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST)))}
 
 #' @export
-PolyDiff <- function(data, samp_vec){
+PolyDiv <- function(data, samp_vec){
   print('Launching - MetaPoly PolyDiff: an Fst calculatuon tool for metagenomic data')
   t0 = Sys.time()
   

@@ -1,6 +1,6 @@
 ################# POLYCORR ################# 
 fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
-  gene_data = na.omit(gene_data[gene_data$depth > 9,])
+  gene_data = na.omit(gene_data[gene_data$DEPTH > 9,])
   if (length(unique(gene_data$sample)) > min_samp){
   cor_test = cor.test(gene_data$res_m, gene_data$variable)
   p = as.numeric(cor_test$p.value)
@@ -15,7 +15,6 @@ fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
 PolyCorr <- function(data, min_samp, samp_vec){
   print('Launching - MetaPoly PolyCorr: a polymorphism-variable correlation tool for metagenomic data')
   t0 = Sys.time()
-  print(Sys.time() - t0)
   
   print(' - Fitting a zero-inflated poisson model on the data...')
   data = as.data.table(data[,colnames(data) %in% c('SNP_N', 'DEPTH', 'gene_length', 'sample', 'gene_id')])
@@ -23,6 +22,7 @@ PolyCorr <- function(data, min_samp, samp_vec){
   model = pscl::zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = model_df)
   print(summary(model))
   model_df$res_m = model$residuals
+  model_df$variable = vapply(model_df$sample, function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
   print(Sys.time() - t0)
   
   print(' - Computing sample coefficients...')
