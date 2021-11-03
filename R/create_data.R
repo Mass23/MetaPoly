@@ -17,6 +17,12 @@ gff_to_gene_data <- function(gff, gene_data){
               gene_length = gene_end - gene_start + 1,
               gene_data = gene_data))}
 
+#' GetGenesData
+#'
+#' Metapoly's import function, takes as input a gff file open via read.delim (see
+#' example on github), and a VCF file loaded with vcfR (read.vcfR). Returns the 
+#' polymorphism data in the format used for all MetaPoly's analyses.
+#'
 #' @export
 GetGenesData <- function(gff, vcf){
   t0 = Sys.time()
@@ -65,6 +71,12 @@ GetSnpData <- function(gene_data){
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,evenness=evenness,majf=majf))}
 
+#' PolySummary
+#'
+#' Summarises the polymorphism in the different genes, across samples. The number
+#' of SNP (SNP_N), sequencing depth (DEPTH), major allele frequency (MAJF), and 
+#' allele frequencies evenness (EVENNESS) are measured and returned in a large df.
+#'
 #' @export
 PolySummary <- function(data, samp_vec){
   print('Launching - MetaPoly PolySummary: summarising the polymorphism data...')

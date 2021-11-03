@@ -17,10 +17,9 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
-
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(mt_poly, 4, samples_vec)
-PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP')
+mt_polycorr = PolyCorr(mt_poly, 4, samples_vec, 'holm')
+PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP', boolean_var = F)
 
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
@@ -29,7 +28,7 @@ mt_fst = PolyDiv(data_mt, samples_vec)
 save.image(file='saved_res')
 load('saved_res')
 
-PlotPolyCorr()
+
 
 
 

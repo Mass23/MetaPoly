@@ -24,7 +24,7 @@ fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
 #'     names). The method handles two populations encoded as 0 and 1's.
 #'
 #' @export
-PolyCorr <- function(data, min_samp, samp_vec){
+PolyCorr <- function(data, min_samp, samp_vec, p_corr='holm'){
   print('Launching - MetaPoly PolyCorr: a polymorphism-variable correlation tool for metagenomic data')
   t0 = Sys.time()
   
@@ -39,15 +39,15 @@ PolyCorr <- function(data, min_samp, samp_vec){
   
   print(' - Computing sample coefficients...')
   coefs = coefficients(model)
-  coefs = coefs[startsWith(names(coefs),'as.factor(sample')]
+  coefs = coefs[startsWith(names(coefs),'count_as.factor(sample)')]
   coefs_df = as.data.frame(coefs)
-  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, '(sample)')[[1]][2], FUN.VALUE = character(1))
+  rownames(coefs_df) = vapply(rownames(coefs_df), function(x) strsplit(x, ')')[[1]][2], FUN.VALUE = character(1))
   coefs_df$type = vapply(rownames(coefs_df), function(x) as.numeric(names(samp_vec)[samp_vec == x]), numeric(1))
   print(Sys.time() - t0)
   
   print(' - Computing correlations of polymorphism with the variable of interest per gene...')
   corr_df = do.call(rbind, lapply(unique(model_df$gene_id), function(gene) fit_cor_gene(model_df[model_df$gene_id == gene,], gene, min_samp, samp_vec)))
-  corr_df$padj = p.adjust(corr_df$p, method = 'holm')
+  corr_df$padj = p.adjust(corr_df$p, method = p_corr)
   sign_genes = corr_df[corr_df$padj < 0.05,]
   pos_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor > 0]))
   neg_genes = as.vector(na.omit(sign_genes$gene_id[sign_genes$cor < 0]))
@@ -56,6 +56,10 @@ PolyCorr <- function(data, min_samp, samp_vec){
   print(' - Analysis done!')
   return(list(pi_corr_res = corr_df, pos_genes = pos_genes, neg_genes = neg_genes, coefs = coefs_df))}
 
+#' PlotPolyCorr
+#'
+#' Plotting function for the PolyCorr function results.
+#'
 #' @export
 PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
   dir.create(paste0(plots_name,'_res'))
