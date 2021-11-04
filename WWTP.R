@@ -18,8 +18,42 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_polycorr = PolyCorr(mt_poly, 4, samples_vec, 'holm')
+mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + ((mt_poly$SNP_N/mt_poly$gene_length)*mt_poly$MAJF)
+sample_df = data.frame()
+for (sample in unique(mt_poly$sample)){
+  mean_cons = weighted.mean(mt_poly$CONS_INDEX[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
+  mean_snp_den =  weighted.mean(mt_poly$SNP_N[mt_poly$sample == sample] / mt_poly$gene_length[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
+  mean_even =  weighted.mean(mt_poly$EVENNESS[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
+  mean_depth=  weighted.mean(mt_poly$DEPTH[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
+  sample_df = rbind(sample_df, data.frame(sample=sample,cons=mean_cons,snp_den=mean_snp_den,even=mean_even,depth=mean_depth))}
+
+sample_df$time = as.Date(vapply(sample_df$sample, function(x) as.character(metadata$Date[metadata$Sample == x]), FUN.VALUE = character(1)))
+sample_df$season = vapply(sample_df$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
+sample_df$group = 'Baseline'
+sample_df$group[sample_df$sample %in% c('D05','D15')] = 'Shift'
+
+library(ggplot2)
+library(ggsci)
+library(ggpubr)
+p1 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=cons,color=season,shape=group), size=5) + 
+  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=cons,color=season), method='lm',se=F,fullrange = T) + 
+  xlab('') + ylab('Cons. Index') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
+
+p2 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=snp_den,color=season,shape=group), size=5) + 
+  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=snp_den,color=season), method='lm',se=F,fullrange = T) + 
+  xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
+
+p3 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=even,color=season,shape=group), size=5) + 
+  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=even,color=season), method='lm',se=F,fullrange = T) + 
+  xlab('Log Depth') + ylab('AF Evenness') + scale_color_jco() + theme_minimal()
+ggarrange(p1,p2,p3,nrow = 4,align='v',  common.legend = TRUE, legend = 'right')
+ggsave('WWTP_poly_summary.pdf', width=5,height = 10)
+
+
+mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP', boolean_var = F)
+pos_enrich = CalcEnrichment(gff, mt_polycorr$pos_genes, cog_func)
+neg_enrich = CalcEnrichment(gff, mt_polycorr$neg_genes, cog_func)
 
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
