@@ -34,7 +34,7 @@ CalcFst <- function(data, samp_vec){
                                       PI_B=pi_between,
                                       PI_W=pi_within,
                                       FST=fst))}
-  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST),SNP_N=nrow(fst_df[is.finite(fst_df$fst),])))}
+  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST),SNP_N=nrow(fst_df[is.finite(fst_df$FST),])))}
 
 #' PolyDiv
 #'
