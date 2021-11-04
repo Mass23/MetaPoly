@@ -4,7 +4,7 @@
 \alias{PolyCorr}
 \title{PolyCorr}
 \usage{
-PolyCorr(data, min_samp, samp_vec)
+PolyCorr(data, min_samp, samp_vec, p_corr = "holm")
 }
 \description{
 This functions computes the gene-wise correlation between the number of SNPs, and a target

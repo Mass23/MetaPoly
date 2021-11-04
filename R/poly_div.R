@@ -20,8 +20,8 @@ CalcFst <- function(data, samp_vec){
     
     if ((n_af1 > 4) & (n_af2 > 4)){
          pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-         pi_1 = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af1), 1000, prob = af1, replace = T))
-         pi_2 = mean(sample(1:length(af2), 1000, prob = af2, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
+         pi1 = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af1), 1000, prob = af1, replace = T))
+         pi2 = mean(sample(1:length(af2), 1000, prob = af2, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
          pi_within = mean(c(pi1,pi2))
          fst = (pi_between - pi_within)/pi_between}
     else{pi_between = NA
