@@ -66,7 +66,7 @@ pos_enrich$enrich[pos_enrich$enrich$padj < 0.05,]
 # odds ratio7        I 4.105441e-05 0.4041271 0.2485946 0.6395266 0.0008210881      Lipid transport and metabolism
 ggplot(pos_enrich$enrich[pos_enrich$enrich$padj < 0.05,]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
   xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none')
-ggsave('Microthrix_WWTP_res/Pos_enrich.pdf')
+ggsave('Microthrix_WWTP_res/Pos_enrich.pdf', width=4, height = 4)
 
 neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]
 #              Function            p       OR   low_CI   high_CI         padj                                                Function_long
@@ -77,23 +77,29 @@ neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]
 # odds ratio15        Q 2.497434e-03 4.550399 1.551631 13.612134 4.495382e-02 Secondary metabolites biosynthesis, transport and catabolism
 ggplot(neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
   xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none')
-ggsave('Microthrix_WWTP_res/Neg_enrich.pdf')
+ggsave('Microthrix_WWTP_res/Neg_enrich.pdf', width=4, height = 3)
 
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$Test
 
 mt_fst = PolyDiv(data_mt, samples_vec)
-save.image(file='saved_res')
-load('saved_res')
-
-
-
-
+mt_fst_norm = mt_fst
+mt_fst_norm$FST[mt_fst_norm$FST < 0] = 0
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
-
 gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
+mt_fst_norm$COG = vapply(mt_fst_norm$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
+mt_fst_norm$COG[is.na(mt_fst_norm$COG)] = 'NoCOG'
+mt_fst_norm$COG_long = vapply(mt_fst_norm$COG, function(x) ifelse(x == 'NoCOG', 'NoCOG', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
+
+na.omit(mt_fst_norm[mt_fst_norm$FST > 0.2,])
+wilcox.test(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), rep(0,length(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]))))
+# non-param: W = 4798802, p-value = 0.9616
+fst_m = mean(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), na.rm = T)
+fst_sd = sd(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), na.rm = T)
+ks.test(rnorm(mean=0, sd=fst_sd,n=100),rnorm(mean=fst_m, sd=fst_sd,n=100) )
+# normal dist: D = 0.09, p-value = 0.8127
 
 
 
@@ -110,15 +116,6 @@ gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_fun
 
 
 
-
-
-
-
-
-
-mt_fst$COG = vapply(mt_fst$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
-mt_fst$COG[is.na(mt_fst$COG)] = 'NoCOG'
-mt_fst$COG_long = vapply(mt_fst$COG, function(x) ifelse(x == 'NoCOG', 'NoCOG', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
 mt_fst$fst_norm = mt_fst$FST
 mt_fst$fst_norm[mt_fst$fst_norm < 0] = 0
 ggplot(mt_fst, aes(x=fst_norm,y=COG_long)) + geom_boxplot() + scale_x_log10()

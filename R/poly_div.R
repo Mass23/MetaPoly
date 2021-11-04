@@ -32,7 +32,7 @@ CalcFst <- function(data, samp_vec){
                                       PI_B=pi_between,
                                       PI_W=pi_within,
                                       FST=fst))}
-  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST)))}
+  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST),SNP_N=nrow(fst_df)))}
 
 #' PolyDiv
 #'
@@ -58,7 +58,8 @@ PolyDiv <- function(data, samp_vec){
     if (nrow(data[[i]]$gene_data) > 0){gene_res = CalcFst(data[[i]]$gene_data, samp_vec)
                                        fst_df = rbind(fst_df , data.frame(gene_id = data[[i]]$gene_id,
                                                                           FST = gene_res$FST,
-                                                                          DEPTH = gene_res$DEPTH))}}
+                                                                          DEPTH = gene_res$DEPTH,
+                                                                          SNP_N = gene_res$SNP_N))}}
   cat(' genes done\n')
   print(Sys.time() - t0)
   print(' - Analysis done!')
