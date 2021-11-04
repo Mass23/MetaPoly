@@ -90,32 +90,9 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
     ggplot2::ggsave(paste0(plots_name,'_res','/',plots_name,'_coefficients.pdf'), width = 3, height = 4)}}
 
 ################ ENRICH ########
+#' @export
 CalcEnrichment <- function(gff, gene_list, cog_table){
-  gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
-  gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
-  gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
-  
-  gff$sign = 'b_No'
-  gff$sign[gff$gene %in% gene_list] = 'a_Yes'
-
-  full_con_tab = table(gff$cog_f, gff$sign)
-  enrich_df = data.frame()
-  for (cog_func in rownames(full_con_tab)){
-    if(cog_func != 'NoCOG'){
-      func_vals = full_con_tab[rownames(full_con_tab) == cog_func,]
-      other_vals =  colSums(full_con_tab[rownames(full_con_tab) != cog_func,])
-      cont_table = as.matrix(rbind(func_vals, other_vals))
-      fish_test = fisher.test(cont_table, 'greater')
-      p = fish_test$p.value
-      or = fish_test$estimate
-      l_or = fish_test$conf.int[1]
-      h_or = fish_test$conf.int[2]
-      enrich_df = rbind(enrich_df, data.frame(Function=cog_func, p=p, OR=or, low_CI=l_or, high_CI=h_or))}}
-  enrich_df$padj = p.adjust(enrich_df$p, method = 'holm')
-  enrich_df$Function_long = vapply(enrich_df$Function, function(x) as.character(cog_functions[x]), character(1))
-  return(list(enrich=enrich_df,cogs=as.vector(na.omit(unique(gff$cog[gff$gene %in% gene_list])))))}
-
-cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
+  cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
                   'A'='RNA processing and modification',
                   'K'='Transcription',
                   'L'='Replication, recombination and repair',
@@ -141,3 +118,29 @@ cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
                   'Q'='Secondary metabolites biosynthesis, transport and catabolism',
                   'R'='General function prediction only',
                   'S'='Function unknown')
+
+
+  gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
+  gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
+  gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
+  
+  gff$sign = 'b_No'
+  gff$sign[gff$gene %in% gene_list] = 'a_Yes'
+
+  full_con_tab = table(gff$cog_f, gff$sign)
+  enrich_df = data.frame()
+  for (cog_func in rownames(full_con_tab)){
+    if(cog_func != 'NoCOG'){
+      func_vals = full_con_tab[rownames(full_con_tab) == cog_func,]
+      other_vals =  colSums(full_con_tab[rownames(full_con_tab) != cog_func,])
+      cont_table = as.matrix(rbind(func_vals, other_vals))
+      fish_test = fisher.test(cont_table, 'greater')
+      p = fish_test$p.value
+      or = fish_test$estimate
+      l_or = fish_test$conf.int[1]
+      h_or = fish_test$conf.int[2]
+      enrich_df = rbind(enrich_df, data.frame(Function=cog_func, p=p, OR=or, low_CI=l_or, high_CI=h_or))}}
+  enrich_df$padj = p.adjust(enrich_df$p, method = 'holm')
+  enrich_df$Function_long = vapply(enrich_df$Function, function(x) as.character(cog_functions[x]), character(1))
+  return(list(enrich=enrich_df,cogs=as.vector(na.omit(unique(gff$cog[gff$gene %in% gene_list])))))}
+
