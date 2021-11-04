@@ -64,7 +64,7 @@ CalcEven <- function(ac){
   return(sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af)))}
 
 CalcNdiv <- function(ac){
-  if((sum(ac) > 0) & (sum(ac > 0) > 1){
+  if((sum(ac) > 0) & (sum(ac > 0) > 1)){
   af = ac / sum(ac)
   return(mean(sample(1:length(af), 1000, prob = af, replace = T) != sample(1:length(af), 1000, prob = af, replace = T)))}
   else{return(NA)}
