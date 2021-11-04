@@ -65,8 +65,8 @@ pos_enrich$enrich[pos_enrich$enrich$padj < 0.05,]
 # odds ratio4        F 2.736090e-03 0.2913363 0.1068114 0.6881908 0.0492496135 Nucleotide transport and metabolism
 # odds ratio7        I 4.105441e-05 0.4041271 0.2485946 0.6395266 0.0008210881      Lipid transport and metabolism
 ggplot(pos_enrich$enrich[pos_enrich$enrich$padj < 0.05,]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
-  xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none')
-ggsave('Microthrix_WWTP_res/Pos_enrich.pdf', width=4, height = 4)
+  xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none') + geom_vline(xintercept = 1, linetype='dashed')
+ggsave('Microthrix_WWTP_res/Pos_enrich.pdf', width=5, height = 4)
 
 neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]
 #              Function            p       OR   low_CI   high_CI         padj                                                Function_long
@@ -76,30 +76,17 @@ neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]
 # odds ratio8         J 2.905802e-03 2.123257 1.283893  3.442975 4.939864e-02              Translation, ribosomal structure and biogenesis
 # odds ratio15        Q 2.497434e-03 4.550399 1.551631 13.612134 4.495382e-02 Secondary metabolites biosynthesis, transport and catabolism
 ggplot(neg_enrich$enrich[neg_enrich$enrich$padj < 0.05,]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
-  xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none')
-ggsave('Microthrix_WWTP_res/Neg_enrich.pdf', width=4, height = 3)
+  xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none') + geom_vline(xintercept = 1, linetype='dashed')
+ggsave('Microthrix_WWTP_res/Neg_enrich.pdf', width=6, height = 5)
 
 samples_vec = metadata$Sample
-names(samples_vec) = metadata$Test
+names(samples_vec) = rep(0,length(samples_vec))
+names(samples_vec)[samples_vec %in% c('D05','D15')] = 1
 
 mt_fst = PolyDiv(data_mt, samples_vec)
-mt_fst_norm = mt_fst
-mt_fst_norm$FST[mt_fst_norm$FST < 0] = 0
-
-gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
-gff$cog = vapply(gff$V9, function(x) strsplit(strsplit(x,'COG:')[[1]][2],';')[[1]][1], FUN.VALUE = character(1))
-gff$cog_f = vapply(gff$cog, function(x) ifelse(is.na(x), 'NoCOG', substr(cog_func$V2[cog_func$V1 == x],1,1)), FUN.VALUE = character(1))
-mt_fst_norm$COG = vapply(mt_fst_norm$gene_id, function(x) gff$cog_f[gff$gene == x], FUN.VALUE = character(1))
-mt_fst_norm$COG[is.na(mt_fst_norm$COG)] = 'NoCOG'
-mt_fst_norm$COG_long = vapply(mt_fst_norm$COG, function(x) ifelse(x == 'NoCOG', 'NoCOG', cog_functions[names(cog_functions) == x]), FUN.VALUE =  character(1))
-
-na.omit(mt_fst_norm[mt_fst_norm$FST > 0.2,])
-wilcox.test(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), rep(0,length(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]))))
-# non-param: W = 4798802, p-value = 0.9616
-fst_m = mean(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), na.rm = T)
-fst_sd = sd(na.omit(mt_fst$FST[is.finite(mt_fst$FST)]), na.rm = T)
-ks.test(rnorm(mean=0, sd=fst_sd,n=100),rnorm(mean=fst_m, sd=fst_sd,n=100) )
-# normal dist: D = 0.09, p-value = 0.8127
+mt_fst_norm = na.omit(mt_fst[mt_fst$SNP_N >= 10,])
+wilcox.test(na.omit(mt_fst_norm$FST), rep(0,nrow(na.omit(mt_fst_norm))), alternative = 'greater')
+# no evidence for higher PI between shift and baseline populations, than within baselines and shift
 
 
 
@@ -114,75 +101,3 @@ ks.test(rnorm(mean=0, sd=fst_sd,n=100),rnorm(mean=fst_m, sd=fst_sd,n=100) )
 
 
 
-
-
-mt_fst$fst_norm = mt_fst$FST
-mt_fst$fst_norm[mt_fst$fst_norm < 0] = 0
-ggplot(mt_fst, aes(x=fst_norm,y=COG_long)) + geom_boxplot() + scale_x_log10()
-
-wilcox_df = data.frame()
-for (cog_func in unique(mt_fst$COG_long)){
-  COG_data = mt_fst$fst_norm[mt_fst$COG_long == cog_func]
-  other_data = mt_fst$fst_norm[mt_fst$COG_long != cog_func]
-  test = wilcox.test(COG_data, other_data)
-  wilcox_df = rbind(wilcox_df, data.frame(COG_long=cog_func, p=test$p.value, W=test$statistic, n = length(COG_data), median=median(COG_data, na.rm = T), mean=mean(COG_data, na.rm = T)))}
-wilcox_df$padj = p.adjust(wilcox_df$p, method = 'fdr')
-
-
-pos_genes = na.omit(mt_polycorr$pi_corr_res$gene_id[(mt_polycorr$pi_corr_res$padj < 0.05) & (mt_polycorr$pi_corr_res$cor > 0)])
-
-
-
-
-x = glm(formula = PI ~ as.factor(COMP) + as.factor(SNP) + as.factor(Var1) + as.factor(Var2) + DEPTH, data=test, family = quasibinomial(), na.action = na.omit)
-
-
-
-hist(mt_fst$fst)
-
-mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + (mt_poly$SNP_N/mt_poly$gene_length*mt_poly$MAJF)
-
-
-library(bayestestR)
-library(rstanarm)
-library(ggplot2)
-mt_poly_f$EVENNESS = mt_poly_f$EVENNESS * 0.99999
-
-df_mod_lm = data.frame()
-for (gene in unique(mt_poly_f$gene_id)){
-gene_data = na.omit(mt_poly_f[mt_poly_f$gene_id==gene,])
-if(nrow(gene_data) > 9){
-mod = lm(EVENNESS ~ log(DEPTH) + variable, weights = sqrt(SNP_N), data=gene_data)
-mod_sum = summary(mod)
-coef = mod_sum$coefficients[3,1]
-p_val = mod_sum$coefficients[3,4]
-df_mod_lm = rbind(df_mod_lm, data.frame(gene=gene, coef=coef, p=p_val))}}
-
-hist(df_mod_lm$coef)
-hist(df_mod_lm$p)
-
-
-coefs = mod$coefficients
-coefs = coefs[startsWith(names(coefs),'sample')]
-names(coefs) = vapply(names(coefs), function(x) strsplit(as.character(x), split='mple')[[1]][2], FUN.VALUE = character(1))
-metadata = metadata[metadata$Sample %in% names(coefs),]
-metadata$Even_mod = vapply(metadata$Sample, function(x) coefs[names(coefs) == x], FUN.VALUE = numeric(1))
-
-ggplot(metadata, aes(x=Date,y=Even_mod,color=Season)) + geom_point()
-
-
-library(pscl)
-library(ggplot2)
-snp_n_mod <- 
-summary(snp_n_mod)
-
-coefs = snp_n_mod$coefficients$count
-coefs = coefs[startsWith(names(coefs),'as.factor(sample)')]
-names(coefs) = vapply(names(coefs), function(x) strsplit(as.character(x), split=')')[[1]][2], FUN.VALUE = character(1))
-metadata = metadata[metadata$Sample %in% names(coefs),]
-metadata$SNP_N_COEFS = vapply(metadata$Sample, function(x) coefs[names(coefs) == x], FUN.VALUE = numeric(1))
-
-ggplot(metadata, aes(x=Date,y=SNP_N_COEFS,color=Season)) + geom_point()
-
-
-ggplot(mt_poly_f, aes(x=DEPTH,y=EVENNESS)) + geom_point() + geom_smooth()

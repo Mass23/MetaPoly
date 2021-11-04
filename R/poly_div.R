@@ -20,7 +20,9 @@ CalcFst <- function(data, samp_vec){
     
     if ((n_af1 > 4) & (n_af2 > 4)){
          pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-         pi_within = mean(sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T) != sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T))
+         pi_1 = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af1), 1000, prob = af1, replace = T))
+         pi_2 = mean(sample(1:length(af2), 1000, prob = af2, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
+         pi_within = mean(c(pi1,pi2))
          fst = (pi_between - pi_within)/pi_between}
     else{pi_between = NA
          pi_within = NA
@@ -32,7 +34,7 @@ CalcFst <- function(data, samp_vec){
                                       PI_B=pi_between,
                                       PI_W=pi_within,
                                       FST=fst))}
-  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST),SNP_N=nrow(fst_df)))}
+  return(list(DEPTH=mean(fst_df$MEAN_DEPTH),FST=median(fst_df$FST),SNP_N=nrow(fst_df[is.finite(fst_df$fst),])))}
 
 #' PolyDiv
 #'
