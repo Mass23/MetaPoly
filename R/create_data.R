@@ -103,7 +103,7 @@ PolySummary <- function(data, samp_vec){
                                                                           DEPTH = snp_data$depth,
                                                                           MAJF = snp_data$majf,
                                                                           EVENNESS = snp_data$evenness,
-                                                                          PI = snp_data$pi
+                                                                          PI = snp_data$pi,
                                                                           gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
   print(Sys.time()-t0)
