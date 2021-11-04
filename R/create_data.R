@@ -61,20 +61,19 @@ CalcMAJF <- function(ac){
 
 CalcEven <- function(ac){
   af = ac / sum(ac)
-  evenness = sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af))
-  return(evenness)}
+  return(sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af)))}
 
-CalcPi <- function(ac){
+CalcNdiv <- function(ac){
   af = ac / sum(ac)
-  ndiv = mean(sample(1:length(af), 1000, prob = af, replace = T) != sample(1:length(af), 1000, prob = af, replace = T))
-  return(ndiv)}
+  print(af)
+  return(mean(sample(1:length(af), 1000, prob = af, replace = T) != sample(1:length(af), 1000, prob = af, replace = T)))}
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
   snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
   evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
-  ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]])), na.rm = T)
+  ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcNdiv(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,evenness=evenness,majf=majf,ndiv=ndiv))}
 
 #' PolySummary
