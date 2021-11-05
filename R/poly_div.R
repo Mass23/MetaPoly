@@ -69,39 +69,3 @@ PolyDiv <- function(data, samp_vec){
 
 
 
-##### Older funcs
-# computing fst for every pair...
-CalcFstPerSample <- function(data, samp_vec){
-  combn_df = as.data.frame(expand.grid(samp_vec, samp_vec))
-  # remove comps of the same sample
-  combn_df = combn_df[as.character(combn_df$Var1) != as.character(combn_df$Var2),]
-  
-  full_df = data.frame()
-  for (i in 1:nrow(data)){
-    snp_data = data[i,]
-    fst_combn = expand.grid(samples_vec, samples_vec)
-    fst_combn$SNP = as.character(i)
-    fst_combn = fst_combn[fst_combn$Var1 != fst_combn$Var2,]
-    res_df = lapply(as.list(1:nrow(fst_combn)), function(i) PairPI(snp_data, fst_combn$Var1[[i]][1], fst_combn$Var2[[i]][1]))
-    res_df = do.call(rbind, res_df)
-    fst_combn = cbind(fst_combn, res_df)
-    full_df = rbind(full_df, fst_combn)}
-  return(full_df)}
-
-geom_mean <- function(x,na.rm=TRUE){return(exp(mean(log(x),na.rm=na.rm)))}
-
-
-PairPI <- function(data, s1, s2){
-  ac1 = as.integer(data[[as.character(s1)]][[1]])
-  depth1 = sum(ac1)
-  af1 = ac1/depth1
-  ac2 = as.integer(data[[as.character(s2)]][[1]])
-  depth2 = sum(ac2)
-  af2 = ac2/depth2
-  pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-  pi_within = mean(sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T) != sample(1:length(af1), 1000, prob = colMeans(rbind(af1,af2)), replace = T))
-  return(data.frame(DEPTH1=depth1, DEPTH2=depth2, DEPTH_GM=geom_mean(depth1, depth2), PI_b=pi_between, PI_w=pi_within))}
-
-CombType <- function(samp_vec, samp1, samp2){
-  if (names(samp_vec)[samp_vec == samp1] == names(samp_vec)[samp_vec == samp2]){return('within')}
-  else{return('between')}}
