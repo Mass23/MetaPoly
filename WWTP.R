@@ -23,33 +23,45 @@ data_mt = GetGenesData(gff, vcf)
 
 ################# POLYSUMMARY ################# 
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_poly$CONS_INDEX = ((mt_poly$gene_length - mt_poly$SNP_N)/mt_poly$gene_length) + ((mt_poly$SNP_N/mt_poly$gene_length)*mt_poly$MAJF)
-sample_df = data.frame()
-for (sample in unique(mt_poly$sample)){
-  mean_cons = weighted.mean(mt_poly$CONS_INDEX[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
-  mean_snp_den =  weighted.mean(mt_poly$SNP_N[mt_poly$sample == sample] / mt_poly$gene_length[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
-  mean_even =  weighted.mean(mt_poly$EVENNESS[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
-  mean_depth=  weighted.mean(mt_poly$DEPTH[mt_poly$sample == sample], mt_poly$gene_length[mt_poly$sample == sample], na.rm=T)
-  sample_df = rbind(sample_df, data.frame(sample=sample,cons=mean_cons,snp_den=mean_snp_den,even=mean_even,depth=mean_depth))}
+
+SummariseSamples <- function(poly_summary){
+  sample_df = data.frame()
+  for (sample in unique(poly_summary$sample)){
+    mean_snp_den =  weighted.mean(poly_summary$SNP_N[poly_summary$sample == sample] / poly_summary$gene_length[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    mean_pi =  weighted.mean(poly_summary$NDIV[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    mean_depth =  weighted.mean(poly_summary$DEPTH[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    mean_even =  weighted.mean(poly_summary$EVENNESS[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    sample_df = rbind(sample_df, data.frame(sample=sample,pi=mean_pi,snp_den=mean_snp_den,depth=mean_depth))}
+  return(sample_df)}
+
+sample_df = SummariseSamples(mt_poly)
 
 sample_df$time = as.Date(vapply(sample_df$sample, function(x) as.character(metadata$Date[metadata$Sample == x]), FUN.VALUE = character(1)))
 sample_df$season = vapply(sample_df$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
 sample_df$group = 'Baseline'
 sample_df$group[sample_df$sample %in% c('D05','D15')] = 'Shift'
 
-p1 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=cons,color=season,shape=group), size=5) + 
-  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=cons,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('') + ylab('Cons. Index') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
-
-p2 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=snp_den,color=season,shape=group), size=5) + 
+p1 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=snp_den,color=season,shape=group), size=5, alpha=0.7) + 
   geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=snp_den,color=season), method='lm',se=F,fullrange = T) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
 
-p3 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=even,color=season,shape=group), size=5) + 
-  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=even,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('Log Depth') + ylab('AF Evenness') + scale_color_jco() + theme_minimal()
-ggarrange(p1,p2,p3,nrow = 4,align='v',  common.legend = TRUE, legend = 'right')
-ggsave('WWTP_poly_summary.pdf', width=5,height = 10)
+p2 = ggplot() + geom_point(sample_df, mapping = aes(x=log(depth),y=pi,color=season,shape=group), size=5, alpha=0.7) + 
+  geom_smooth(sample_df[sample_df$group == 'Baseline',], mapping = aes(x=log(depth),y=pi,color=season), method='lm',se=F,fullrange = T) + 
+  xlab('Log Depth') + ylab('Nuc. Diversity') + scale_color_jco() + theme_minimal()
+ggarrange(p1,p2,nrow = 2,align='v',  common.legend = TRUE, legend = 'right')
+ggsave('WWTP_poly_summary.pdf', width=4,height = 6)
+
+# models
+mod_snp_n_all = lm(data=sample_df, snp_den ~ log(depth):season)
+summary(mod_snp_n_all)
+mod_snp_n_shift = lm(data=sample_df[sample_df$season == 'Autumn',], snp_den ~ log(depth) + group)
+summary(mod_snp_n_shift)
+
+mod_ndiv_all = lm(data=sample_df, pi ~ log(depth):season)
+summary(mod_ndiv_all)
+mod_ndiv_shift = lm(data=sample_df[sample_df$season == 'Autumn',], pi ~ log(depth) + group)
+summary(mod_ndiv_shift)
 
 ################# POLYCORR ################# 
 mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
