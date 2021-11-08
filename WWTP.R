@@ -15,7 +15,7 @@ gff = gff[gff$V3 == 'CDS',]
 metadata = read.csv('data/WWTP/WWTP_samples.csv')
 metadata = metadata[grepl('D',metadata$Sample),]
 samples_vec = metadata$Sample
-metadata$Date = as.Date(metadata$Date, format = "%d-%m-%Y")
+metadata$Date = as.Date(metadata$Date, format = "%Y-%m-%d")
 metadata$time_diff = abs(difftime(metadata$Date, as.Date('2011-11-23', tryFormats = "%Y-%m-%d"), units='days'))
 names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 

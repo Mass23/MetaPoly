@@ -123,6 +123,5 @@ SummariseSamples <- function(poly_summary){
     mean_pi =  weighted.mean(poly_summary$NDIV[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_depth =  weighted.mean(poly_summary$DEPTH[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
-    mean_even =  weighted.mean(poly_summary$EVENNESS[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     sample_df = rbind(sample_df, data.frame(sample=sample,pi=mean_pi,snp_den=mean_snp_den,depth=mean_depth))}
   return(sample_df)}
