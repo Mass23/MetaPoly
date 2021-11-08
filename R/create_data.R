@@ -106,7 +106,7 @@ PolySummary <- function(data, samp_vec){
                                                                           NDIV = snp_data$ndiv,
                                                                           gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
-  PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDF$MAJF)
+  PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDf$MAJF)
   print(Sys.time()-t0)
   return(PolyDf)}
 
