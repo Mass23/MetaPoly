@@ -55,16 +55,7 @@ summary(mod_ndiv_shift)
 mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP', boolean_var = F)
 
-cog_func = read.delim('data/cog-20.def.tab', sep='\t', header = F)
-for (i in 1:nrow(cog_func)){
-  row = cog_func[i,]
-  if (length(strsplit(row$V2,'')[[1]]) > 1){
-      others = strsplit(row$V2,'')[[1]][2:length(strsplit(row$V2,'')[[1]])]
-      cog_func$V2[i] = as.character(strsplit(row$V2,'')[[1]][1])
-      for (cat in others){
-        mod_row = row
-        mod_row$V2 = cat
-        cog_func = rbind(cog_func, mod_row)}}}
+
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff_to_test = gff[gff$gene %in% mt_polycorr$pi_corr_res$gene_id,]

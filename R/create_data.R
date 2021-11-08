@@ -75,7 +75,7 @@ GetSnpData <- function(gene_data){
   #evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcNdiv(as.matrix(ac)[1][[1]])), na.rm = T)
-  return(list(depth=depth,snp_n=snp_n,evenness=evenness,majf=majf,ndiv=ndiv))}
+  return(list(depth=depth,snp_n=snp_n,majf=majf,ndiv=ndiv))}#evenness=evenness,
 
 #' PolySummary
 #'
