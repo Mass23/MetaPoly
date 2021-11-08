@@ -59,9 +59,9 @@ CalcMAJF <- function(ac){
   if (majf == 1){majf = NA}
   return(majf)}
 
-CalcEven <- function(ac){
-  af = ac / sum(ac)
-  return(sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af)))}
+#CalcEven <- function(ac){
+#  af = ac / sum(ac)
+#  return(sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af)))}
 
 CalcNdiv <- function(ac){
   if((sum(ac) > 0) & (sum(ac > 0) > 1)){
@@ -72,7 +72,7 @@ CalcNdiv <- function(ac){
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
   snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
-  evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
+  #evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcNdiv(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,evenness=evenness,majf=majf,ndiv=ndiv))}
@@ -102,10 +102,11 @@ PolySummary <- function(data, samp_vec){
                                                                           SNP_N = snp_data$snp_n,
                                                                           DEPTH = snp_data$depth,
                                                                           MAJF = snp_data$majf,
-                                                                          EVENNESS = snp_data$evenness,
+                                                                          #EVENNESS = snp_data$evenness,
                                                                           NDIV = snp_data$ndiv,
                                                                           gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
+  PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDF$MAJF)
   print(Sys.time()-t0)
   return(PolyDf)}
 
