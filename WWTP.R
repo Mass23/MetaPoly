@@ -75,7 +75,7 @@ mt_polycorr$pi_corr_res$sign = 'No'
 mt_polycorr$pi_corr_res$sign[mt_polycorr$pi_corr_res$padj < 0.05] = 'Yes'
 ggplot(mt_polycorr$pi_corr_res, aes(x=cor,y=-log(p),color=sign)) + geom_point() + theme_minimal() + scale_color_jco()
 
-pos_enrich$enrich[(pos_enrich$enrich$padj < 0.05) & (pos_enrich$enrich$OR > 1),]
+pos_enrich$enrich[(pos_enrich$enrich$padj < 0.05),]
 
 neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]
 #              Function            p       OR   low_CI   high_CI         padj                                                Function_long

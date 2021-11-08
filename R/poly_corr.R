@@ -91,7 +91,17 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
 
 ################ ENRICH ########
 #' @export
-CalcEnrichment <- function(gff, gene_list, cog_table){
+CalcEnrichment <- function(gff, gene_list){
+  cog_table = read.delim('data/cog-20.def.tab', sep='\t', header = F)
+for (i in 1:nrow(cog_func)){
+  row = cog_table[i,]
+  if (length(strsplit(row$V2,'')[[1]]) > 1){
+      others = strsplit(row$V2,'')[[1]][2:length(strsplit(row$V2,'')[[1]])]
+      cog_table $V2[i] = as.character(strsplit(row$V2,'')[[1]][1])
+      for (cat in others){
+        mod_row = row
+        mod_row$V2 = cat
+        cog_table = rbind(cog_table, mod_row)}}}
   cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
                   'A'='RNA processing and modification',
                   'K'='Transcription',
