@@ -116,12 +116,18 @@ PolySummary <- function(data, samp_vec){
 #' wide data per sample
 #'
 #' @export
-SummariseSamples <- function(poly_summary){
+SummariseSamples <- function(poly_summary, val_depth){
+  genes_to_keep = c()
+  for (gene in unique(poly_summary$gene_id)){
+    if (min(poly_summary$DEPTH[poly_summary$gene_id == gene]) > val_depth){
+      genes_to_keep = c(genes_to_keep, gene)}}
+  poly_summary = poly_summary[poly_summary$gene_id %in% genes_to_keep,]
   sample_df = data.frame()
   for (sample in unique(poly_summary$sample)){
     mean_snp_den =  weighted.mean(poly_summary$SNP_N[poly_summary$sample == sample] / poly_summary$gene_length[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_pi =  weighted.mean(poly_summary$NDIV[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_depth =  weighted.mean(poly_summary$DEPTH[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
-    sample_df = rbind(sample_df, data.frame(sample=sample,pi=mean_pi,snp_den=mean_snp_den,depth=mean_depth))}
-  return(sample_df)}
+    mean_cons =  weighted.mean(poly_summary$Cons_index[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    sample_df = rbind(sample_df, data.frame(sample=sample,MEAN_PI=mean_pi,MEAN_CONS_I=mean_cons,MEAN_SNP_DEN=mean_snp_den,MEAN_DEPTH=mean_depth,MEAN_MAJF=mean_majf))}
+  return(list(table=sample_df,n_genes=length(genes_to_keep)))}

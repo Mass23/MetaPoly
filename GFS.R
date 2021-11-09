@@ -12,17 +12,69 @@ genome = ape::read.dna('data/GFS/metabat_res.836.fa', format = "fasta")
 gff <- read.delim("data/GFS/PROKKA_09242021.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
 
-metadata = read.csv('data/WWTP/WWTP_samples.csv')
-metadata = metadata[grepl('D',metadata$Sample),]
-samples_vec = metadata$Sample
-names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
+metadata = read.csv('data/GFS/samples.csv')
+samples_vec_n = colnames(vcf@gt)
+samples_vec_n = samples_vec_n[samples_vec_n != 'FORMAT']
+format_name <- function(name){
+  name = gsub('GL_R.._','',name)
+  name = gsub('GL_R._','',name)
+  name = gsub('_.$','',name)
+  name = gsub('B$','',name)
+  name = gsub('UP','Up',name)
+  name = gsub('DN','Down',name)
+  name[!(grepl('GL_',name))] = gsub('GL','GL_',name[!(grepl('GL_',name))])
+  return(name)}
+names_samp_vec = vapply(samples_vec_n, function(x) log(metadata$snout_dist[metadata$location == x]), FUN.VALUE = numeric(1))
+
+samples_vec = colnames(vcf@gt)[colnames(vcf@gt) != 'FORMAT']
+names(samples_vec) = names_samp_vec
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
 
 ################# POLYSUMMARY ################# 
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_samples = SummariseSamples(mt_poly)
+mt_poly = PolySummary(data_mt, samples_vec)
+mt_poly$habitat = 'Sediment'
+mt_poly$habitat[startsWith(mt_poly$sample, 'GL_R')] = 'Rock'
+
+min_depth_comp = data.frame()
+for (i in 1:10){
+  mt_samples = SummariseSamples(mt_poly, i)
+  if(nrow(mt_samples$table) > 0){
+  mt_samples$table$MIN_DEPTH = i
+  mt_samples$table$N_genes = mt_samples$n_genes
+  min_depth_comp = rbind(min_depth_comp, mt_samples$table)}}
+min_depth_comp$habitat = 'Sediment'
+min_depth_comp$habitat[startsWith(min_depth_comp$sample, 'GL_R')] = 'Rock'
+min_depth_comp$sample_clean = vapply(min_depth_comp$sample, format_name, FUN.VALUE = character(1))
+min_depth_comp$expedition = vapply(min_depth_comp$sample_clean, function(x) metadata$expedition[metadata$location == x], FUN.VALUE = character(1))
+
+ggplot(min_depth_comp,aes(x=MIN_DEPTH,y=log(MEAN_PI),group=sample,color=expedition,shape=habitat)) + geom_line() + geom_point(size=3) + geom_text(aes(label=sample_clean),nudge_y = 0.01)
+
+
+GI_samples = SummariseSamples(mt_poly, 10)
+GI_samples$table$habitat = 'Sediment'
+GI_samples$table$habitat[startsWith(GI_samples$table$sample, 'GL_R')] = 'Rock'
+GI_samples$table$sample_clean = vapply(GI_samples$table$sample, format_name, FUN.VALUE = character(1))
+GI_samples$table$snout_dist = as.numeric(vapply(GI_samples$table$sample_clean, function(x) metadata$snout_dist[metadata$location == x], FUN.VALUE = numeric(1)))
+GI_samples$table$gl_a = as.numeric(vapply(GI_samples$table$sample_clean, function(x) metadata$gl_a[metadata$location == x], FUN.VALUE = numeric(1)))
+GI_samples$table$log_GI = log(sqrt(GI_samples$table$gl_a) / (sqrt(GI_samples$table$gl_a) + GI_samples$table$snout_dist))
+GI_samples$table$expedition = vapply(GI_samples$table$sample_clean, function(x) metadata$expedition[metadata$location == x], FUN.VALUE = character(1))
+
+mt_samples$turb = vapply(mt_samples$sample_clean, function(x) metadata$turb[metadata$location == x], FUN.VALUE = numeric(1))
+mt_samples$water_temp = vapply(mt_samples$sample_clean, function(x) metadata$water_temp[metadata$location == x], FUN.VALUE = numeric(1))
+mt_samples$glacier = vapply(mt_samples$sample_clean, function(x) as.character(strsplit(x,split='_')[[1]][2]), FUN.VALUE = character(1))
+
+
+
+ggplot(GI_samples$table, aes(y=MEAN_SNP_DEN,x=log_GI,color=expedition,size=log(MEAN_DEPTH))) + geom_point() + geom_smooth(method='lm') + facet_grid(~habitat)
+summary(lm(MEAN_PI ~ log(MEAN_DEPTH) + habitat, data=mt_samples))
+
+ggplot(GI_samples$table, aes(y=MEAN_PI,x=log_GI,color=expedition,size=log(MEAN_DEPTH))) + geom_point() + geom_smooth(method='lm') + facet_grid(~habitat)
+summary(lm(MEAN_PI ~ log(MEAN_DEPTH) + habitat, data=mt_samples))
+
+ggplot(GI_samples$table, aes(y=MEAN_PI,x=MEAN_SNP_DEN,color=habitat,size=log(MEAN_DEPTH))) + geom_point() + geom_smooth(method='lm')
+
 
 
 # models
