@@ -56,7 +56,6 @@ CalcMAJF <- function(ac){
   if(unique(ac) == 0){return(NA)}
   af = ac / sum(ac)
   majf = max(af)
-  if (majf == 1){majf = NA}
   return(majf)}
 
 #CalcEven <- function(ac){
@@ -66,13 +65,12 @@ CalcMAJF <- function(ac){
 CalcNdiv <- function(ac){
   if((sum(ac) > 0) & (sum(ac > 0) > 1)){
   af = ac / sum(ac)
-  return(mean(sample(1:length(af), 1000, prob = af, replace = T) != sample(1:length(af), 1000, prob = af, replace = T)))}
+  return(mean(sample(1:length(af), 10000, prob = af, replace = T) != sample(1:length(af), 10000, prob = af, replace = T)))}
   else{return(NA)}}
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
-  snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]]) > 1, 1, 0)))
-  #evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
+  snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcNdiv(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,majf=majf,ndiv=ndiv))}#evenness=evenness,
