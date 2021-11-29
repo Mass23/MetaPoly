@@ -9,13 +9,13 @@ library(ggpubr)
 
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
-gff <- read.delim("data/WWTP/Bio17-1_NCBI_prokka.gff", header=F, comment.char="#", sep='\t', quote = '')
+gff <- read.delim("data/WWTP/Bio17-1.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
 
 metadata = read.csv('data/WWTP/WWTP_samples.csv')
 metadata = metadata[grepl('D',metadata$Sample),]
 samples_vec = metadata$Sample
-metadata$Date = as.Date(metadata$Date, format = "%Y-%m-%d")
+metadata$Date = as.Date(metadata$Date, format = "%d-%m-%Y")
 metadata$time_diff = abs(difftime(metadata$Date, as.Date('2011-11-23', tryFormats = "%Y-%m-%d"), units='days'))
 names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 
@@ -23,39 +23,45 @@ names(samples_vec) = log(as.numeric(metadata$time_diff)+1)
 data_mt = GetGenesData(gff, vcf)
 
 ################# POLYSUMMARY ################# 
+# 1. data generation
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_samples = SummariseSamples(mt_poly)
+mt_poly = write.csv('data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
+mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
+# generate sample summaries
+mt_samples = SummariseSamples(mt_poly, 5)
 
-mt_samples$season = vapply(mt_samples$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
-mt_samples$group = 'Baseline'
-mt_samples$group[mt_samples$sample %in% c('D05','D15')] = 'Shift'
+# 2. data visualisation
+mt_samples$table$season = vapply(mt_samples$table$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
+mt_samples$table$date = as.Date(vapply(mt_samples$table$sample, function(x) as.character(metadata$Date[metadata$Sample == x]), FUN.VALUE = character(1)))
 
-p1 = ggplot() + geom_point(mt_samples, mapping = aes(x=log(depth),y=snp_den,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples[mt_samples$group == 'Baseline',], mapping = aes(x=log(depth),y=snp_den,color=season), method='lm',se=F,fullrange = T) + 
+mt_samples$table$group = 'Baseline'
+mt_samples$table$group[mt_samples$table$sample %in% c('D05','D15')] = 'Shift'
+
+p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
+  geom_smooth(mt_samples$table[mt_samples$table$group == 'Baseline',], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
 
-p2 = ggplot() + geom_point(mt_samples, mapping = aes(x=log(depth),y=pi,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples[mt_samples$group == 'Baseline',], mapping = aes(x=log(depth),y=pi,color=season), method='lm',se=F,fullrange = T) + 
+p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PI,color=season,shape=group), size=5, alpha=0.7) + 
+  geom_smooth(mt_samples$table[mt_samples$table$group == 'Baseline',], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PI,color=season), method='lm',se=F,fullrange = T) + 
   xlab('Log Depth') + ylab('Nuc. Diversity') + scale_color_jco() + theme_minimal()
 ggarrange(p1,p2,nrow = 2,align='v',  common.legend = TRUE, legend = 'right')
 ggsave('WWTP_poly_summary.pdf', width=4,height = 6)
 
-# models
-mod_snp_n_all = lm(data=mt_samples, snp_den ~ log(depth):season)
+# 3. data analysis
+mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
 summary(mod_snp_n_all)
-mod_snp_n_shift = lm(data=mt_samples[mt_samples$season == 'Autumn',], snp_den ~ log(depth) + group)
+mod_snp_n_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
 summary(mod_snp_n_shift)
 
-mod_ndiv_all = lm(data=mt_samples, pi ~ log(depth):season)
+mod_ndiv_all = lm(data=mt_samples$table, MEAN_PI ~ log(MEAN_DEPTH):season)
 summary(mod_ndiv_all)
-mod_ndiv_shift = lm(data=mt_samples[mt_samples$season == 'Autumn',], pi ~ log(depth) + group)
+mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_PI ~ log(MEAN_DEPTH) + group)
 summary(mod_ndiv_shift)
 
 ################# POLYCORR ################# 
+# 1. data generation
 mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP', boolean_var = F)
-
-
 
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff_to_test = gff[gff$gene %in% mt_polycorr$pi_corr_res$gene_id,]
@@ -66,6 +72,7 @@ mt_polycorr$pi_corr_res$sign = 'No'
 mt_polycorr$pi_corr_res$sign[mt_polycorr$pi_corr_res$padj < 0.05] = 'Yes'
 ggplot(mt_polycorr$pi_corr_res, aes(x=cor,y=-log(p),color=sign)) + geom_point() + theme_minimal() + scale_color_jco()
 
+# 2. data analysis
 pos_enrich$enrich[(pos_enrich$enrich$padj < 0.05),]
 
 neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]
@@ -77,12 +84,48 @@ neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]
 # odds ratio8         J 4.360373e-05 2.091103 1.464532 2.963444 8.720747e-04              Translation, ribosomal structure and biogenesis
 # odds ratio10        L 7.988219e-04 2.067540 1.342677 3.147488 1.278115e-02                        Replication, recombination and repair
 # odds ratio15        Q 5.924271e-05 3.803353 1.900858 7.665006 1.125611e-03 Secondary metabolites biosynthesis, transport and catabolism
+
+# 3. data visualisation
 ggplot(neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
   xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none') + geom_vline(xintercept = 1, linetype='dashed')
 ggsave('Microthrix_WWTP_res/Neg_enrich.pdf', width=6, height = 5)
 
 out_sign_neg = cog_func[(cog_func$V1 %in% neg_enrich$cogs) & (cog_func$V2 %in% neg_enrich$enrich$Function[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1)]),]
 write.csv(out_sign_neg, file='WWTP_mt_neg_sign_funcs_cogs.csv')
+
+
+
+################# META TRANSCRIPTOMICS ################# 
+# 1. data generation
+files = list.files(path = "data/WWTP/metaT/*.tsv")
+trans_tab = data.frame()
+trans_tab$GeneID = read.csv(files[1], sep='\t')$Geneid
+trans_tab$Length = read.csv(files[1], sep='\t')$Length
+for (file in files){
+  name = strsplit(strsplit(file,split='_')[[1]][-1], split='.')[[1]][1]
+  counts = read.csv(files[1], sep='\t')[,7]
+  trans_tab[name] = counts}
+write.csv(trans_tab, file = 'data/WWTP/WWTP_metaT.csv', row.names = F, quote = F)
+trans_tab = read.csv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ###################################################################################################
 # Compare before - during
@@ -104,14 +147,3 @@ names(samples_vec)[samples_vec %in% metadata$Sample[metadata$Season == 'Winter']
 mt_fst_ba = PolyDiv(data_mt, samples_vec)
 mt_fst_ba_norm = na.omit(mt_fst_ba[mt_fst_ba$SNP_N >= 10,])
 wilcox.test(na.omit(mt_fst_ba_norm$FST), rep(0,nrow(na.omit(mt_fst_ba_norm))), alternative = 'greater')
-
-
-
-
-
-
-
-
-
-
-

@@ -71,7 +71,7 @@ CalcNdiv <- function(ac){
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
-  snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
+  snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]]) > 1, 1, 0)))
   #evenness = colMeans(apply(gene_data, c(1,2), function(ac) CalcEven(as.matrix(ac)[1][[1]])), na.rm = T)
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   ndiv = colMeans(apply(gene_data, c(1,2), function(ac) CalcNdiv(as.matrix(ac)[1][[1]])), na.rm = T)
@@ -102,7 +102,6 @@ PolySummary <- function(data, samp_vec){
                                                                           SNP_N = snp_data$snp_n,
                                                                           DEPTH = snp_data$depth,
                                                                           MAJF = snp_data$majf,
-                                                                          #EVENNESS = snp_data$evenness,
                                                                           NDIV = snp_data$ndiv,
                                                                           gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
   cat(' genes done\n')
