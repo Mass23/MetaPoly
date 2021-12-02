@@ -53,7 +53,7 @@ GetGenesData <- function(gff, vcf){
 
 ############### 2. POLYMORPHISM SUMMARY ################ 
 CalcPi <- function(ac){return(1-sum((ac/sum(ac))**2))}
-CalcMAJF <- function(ac){max(ac / sum(ac))}
+CalcMAJF <- function(ac){return(max(ac / sum(ac)))}
   
 #if(sum(ac > 0) > 1){
 #     af = ac / sum(ac)
@@ -64,8 +64,8 @@ CalcMAJF <- function(ac){max(ac / sum(ac))}
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
   snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
-  majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]]), na.rm = T)
-  npi = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]]), na.rm = T)
+  majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
+  npi = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}#evenness=evenness,
 
 #' PolySummary
