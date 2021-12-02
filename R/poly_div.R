@@ -18,19 +18,21 @@ CalcFst <- function(data, samp_vec){
     af1 = rowMeans(af1_filtered)
     af2 = rowMeans(af2_filtered)
     
-    if ((n_af1 > 4) & (n_af2 > 4)){
-         pi_between = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-         pi1 = mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af1), 1000, prob = af1, replace = T))
-         pi2 = mean(sample(1:length(af2), 1000, prob = af2, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
-         pi_within = mean(c(pi1,pi2))
-         fst = (pi_between - pi_within)/pi_between}
-    else{pi_between = NA
-         pi_within = NA
-         fst=NA}
+    #if ((n_af1 > 4) & (n_af2 > 4)){
+    pi_between = 1-sum(af1 * af2)
+           #mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
+    pi1 = 1-sum(af1**2)
+           #mean(sample(1:length(af1), 1000, prob = af1, replace = T) != sample(1:length(af1), 1000, prob = af1, replace = T))
+    pi2 = 1-sum(af2**2)
+           #mean(sample(1:length(af2), 1000, prob = af2, replace = T) != sample(1:length(af2), 1000, prob = af2, replace = T))
+    pi_within = mean(c(pi1,pi2))
+    fst = (pi_between - pi_within)/pi_between#}
+    #else{pi_between = NA
+    #     pi_within = NA
+    #     fst=NA}
     fst_df = rbind(fst_df, data.frame(SNP=as.character(i),
-                                      DEPTH1=mean(depth1, na.rm=T),
-                                      DEPTH2=mean(depth2, na.rm=T),
-                                      MEAN_DEPTH=mean(c(depth1,depth2)),
+                                      MIN_DEPTH=min(c(depth1,depth2)),
+                                      MEAN_DEPTH=exp(mean(log(c(depth1,depth2)))),
                                       PI_B=pi_between,
                                       PI_W=pi_within,
                                       FST=fst))}
