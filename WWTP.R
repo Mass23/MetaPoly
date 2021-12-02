@@ -46,7 +46,7 @@ p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=M
   geom_smooth(mt_samples$table[mt_samples$table$group == 'Baseline',], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PI,color=season), method='lm',se=F,fullrange = T) + 
   xlab('Log Depth') + ylab('Nuc. Diversity') + scale_color_jco() + theme_minimal()
 ggarrange(p1,p2,nrow = 2,align='v',  common.legend = TRUE, legend = 'right')
-ggsave('WWTP_poly_summary.pdf', width=4,height = 6)
+ggsave('figures/fig1_WWTP_poly_summary.jpg', width=4,height = 6)
 
 # 3. data analysis
 mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
