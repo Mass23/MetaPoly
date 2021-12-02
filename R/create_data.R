@@ -83,10 +83,10 @@ SumSnpData <- function(data, samp_vec){
        out_df = data.frame(gene_id = rep(data$gene_id,length(samp_vec)),
                            sample = as.vector(samp_vec),
                            variable = as.numeric(names(samp_vec)),
-                           SNP_N = NA
-                           DEPTH = NA
-                           MAJF = NA
-                           PI = NA
+                           SNP_N = NA,
+                           DEPTH = NA,
+                           MAJF = NA,
+                           PI = NA,
                            gene_length = rep(data$gene_length,length(samp_vec)))
   return(out_df)}}
 
