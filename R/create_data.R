@@ -66,7 +66,29 @@ GetSnpData <- function(gene_data){
   snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
   npi = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]])), na.rm = T)
-  return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}#evenness=evenness,
+  return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}
+
+SumSnpData <- function(data, samp_vec){
+  if (nrow(data[[i]]$gene_data) > 0){snp_data = GetSnpData(data$gene_data[,..cols])
+                                       out_df = data.frame(gene_id = rep(data$gene_id,length(samp_vec)),
+                                                sample = as.vector(samp_vec),
+                                                variable = as.numeric(names(samp_vec)),
+                                                SNP_N = snp_data$snp_n,
+                                                DEPTH = snp_data$depth,
+                                                MAJF = snp_data$majf,
+                                                PI = snp_data$npi,
+                                                gene_length = rep(data$gene_length,length(samp_vec)))
+                                      return(out_df)}
+  else{snp_data = GetSnpData(data$gene_data[,..cols])
+       out_df = data.frame(gene_id = rep(data$gene_id,length(samp_vec)),
+                           sample = as.vector(samp_vec),
+                           variable = as.numeric(names(samp_vec)),
+                           SNP_N = NA
+                           DEPTH = NA
+                           MAJF = NA
+                           PI = NA
+                           gene_length = rep(data$gene_length,length(samp_vec)))
+  return(out_df)}}
 
 #' PolySummary
 #'
@@ -82,17 +104,8 @@ PolySummary <- function(data, samp_vec, n_cores){
   print(' - Computing metrics')
   PolyDf = data.frame()
   registerDoMC(n_cores)
-  PolyDf foreach(i=1:length(data)) %dopar% {
-    if (nrow(data[[i]]$gene_data) > 0){snp_data = GetSnpData(data[[i]]$gene_data[,..cols])
-                                       out_df = data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
-                                                                          sample = as.vector(samp_vec),
-                                                                          variable = as.numeric(names(samp_vec)),
-                                                                          SNP_N = snp_data$snp_n,
-                                                                          DEPTH = snp_data$depth,
-                                                                          MAJF = snp_data$majf,
-                                                                          PI = snp_data$npi,
-                                                                          gene_length = rep(data[[i]]$gene_length,length(samp_vec)))
-                                       return(out_df)}}
+  PolyDf foreach(i=1:length(data), .combine = rbind) %dopar% {SumSnpData(data[[i]], samp_vec)
+    
   cat(' genes done\n')
   PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDf$MAJF)
   print(Sys.time()-t0)
