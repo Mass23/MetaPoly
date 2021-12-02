@@ -75,26 +75,24 @@ GetSnpData <- function(gene_data){
 #' allele frequencies evenness (EVENNESS) are measured and returned in a large df.
 #'
 #' @export
-PolySummary <- function(data, samp_vec){
+PolySummary <- function(data, samp_vec, n_cores){
   print('Launching - MetaPoly PolySummary: summarising the polymorphism data...')
   t0 = Sys.time()
   
   print(' - Computing metrics')
   PolyDf = data.frame()
-  cols = as.vector(samp_vec)
-  count=0
-  for (i in 1:length(data)){
-    count = count +  1
-    cat("\r",count)
+  registerDoMC(n_cores)
+  PolyDf foreach(i=1:length(data)) %dopar% {
     if (nrow(data[[i]]$gene_data) > 0){snp_data = GetSnpData(data[[i]]$gene_data[,..cols])
-                                       PolyDf = rbind(PolyDf , data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
+                                       out_df = data.frame(gene_id = rep(data[[i]]$gene_id,length(samp_vec)),
                                                                           sample = as.vector(samp_vec),
                                                                           variable = as.numeric(names(samp_vec)),
                                                                           SNP_N = snp_data$snp_n,
                                                                           DEPTH = snp_data$depth,
                                                                           MAJF = snp_data$majf,
                                                                           PI = snp_data$npi,
-                                                                          gene_length = rep(data[[i]]$gene_length,length(samp_vec))))}}
+                                                                          gene_length = rep(data[[i]]$gene_length,length(samp_vec)))
+                                       return(out_df)}}
   cat(' genes done\n')
   PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDf$MAJF)
   print(Sys.time()-t0)
