@@ -62,11 +62,13 @@ CalcMAJF <- function(ac){
 #  af = ac / sum(ac)
 #  return(sum(-vapply(af, function(x) x * log(x), FUN.VALUE = numeric(1)))/log(length(af)))}
 
-CalcNdiv <- function(ac){
-  if(sum(ac > 0) > 1){
-       af = ac / sum(ac)
-       return(mean(sample(1:length(af), 10000, prob = af, replace = T) != sample(1:length(af), 10000, prob = af, replace = T)))}
-    else{return(0)}}
+CalcNdiv <- function(ac){return(1-sum((ac/sum(ac))**2))}
+  
+  #if(sum(ac > 0) > 1){
+  #     af = ac / sum(ac)
+  #     
+  #     #return(mean(sample(1:length(af), 10000, prob = af, replace = T) != sample(1:length(af), 10000, prob = af, replace = T)))}
+  # else{return(0)}}
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))

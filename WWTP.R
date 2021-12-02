@@ -6,7 +6,6 @@ library(MetaPoly)
 library(ggplot2)
 library(ggsci)
 library(ggpubr)
-library(IHW)
 
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
