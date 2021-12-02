@@ -67,8 +67,8 @@ CalcNdiv <- function(ac){
     if(sum(ac > 0) > 1){
        af = ac / sum(ac)
        return(mean(sample(1:length(af), 10000, prob = af, replace = T) != sample(1:length(af), 10000, prob = af, replace = T)))}
-    else{return(0)}
-  else{return(NA)}}}
+    else{return(0)}}
+  else{return(NA)}}
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))

@@ -25,7 +25,7 @@ data_mt = GetGenesData(gff, vcf)
 
 ################# POLYSUMMARY ################# 
 # 1. data generation
-#mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
 write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
 # generate sample summaries
