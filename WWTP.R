@@ -6,6 +6,7 @@ library(MetaPoly)
 library(ggplot2)
 library(ggsci)
 library(ggpubr)
+library(IHW)
 
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
@@ -24,8 +25,8 @@ data_mt = GetGenesData(gff, vcf)
 
 ################# POLYSUMMARY ################# 
 # 1. data generation
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
-mt_poly = write.csv('data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
+#mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)])
+write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
 # generate sample summaries
 mt_samples = SummariseSamples(mt_poly, 5)
@@ -49,24 +50,24 @@ ggsave('WWTP_poly_summary.pdf', width=4,height = 6)
 
 # 3. data analysis
 mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
-summary(mod_snp_n_all)
+summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6721
 mod_snp_n_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
-summary(mod_snp_n_shift)
-
+summary(mod_snp_n_shift) # shift p = 3.31e-06, r2 = 0.9983
 mod_ndiv_all = lm(data=mt_samples$table, MEAN_PI ~ log(MEAN_DEPTH):season)
-summary(mod_ndiv_all)
+summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6721
 mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_PI ~ log(MEAN_DEPTH) + group)
-summary(mod_ndiv_shift)
+summary(mod_ndiv_shift) # shift p = 0.6, r2 = 0.9631
 
 ################# POLYCORR ################# 
 # 1. data generation
 mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'Microthrix_WWTP', boolean_var = F)
 
+cog_func = read.csv('data/cog-20.def.tab',sep = '\t',header = F)
 gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
 gff_to_test = gff[gff$gene %in% mt_polycorr$pi_corr_res$gene_id,]
-pos_enrich = CalcEnrichment(gff_to_test, mt_polycorr$pos_genes, cog_func)
-neg_enrich = CalcEnrichment(gff_to_test, mt_polycorr$neg_genes, cog_func)
+pos_enrich = CalcEnrichment(gff_to_test, mt_polycorr$pos_genes)
+neg_enrich = CalcEnrichment(gff_to_test, mt_polycorr$neg_genes)
 
 mt_polycorr$pi_corr_res$sign = 'No'
 mt_polycorr$pi_corr_res$sign[mt_polycorr$pi_corr_res$padj < 0.05] = 'Yes'
@@ -96,26 +97,87 @@ write.csv(out_sign_neg, file='WWTP_mt_neg_sign_funcs_cogs.csv')
 
 
 ################# META TRANSCRIPTOMICS ################# 
+library(DESeq2)
+TPM <- function(counts, lengths){
+  rpk = counts / (lengths / 1000)
+  scaling_factor = sum(rpk) / 1000000
+  return(rpk / scaling_factor)}
+
 # 1. data generation
-files = list.files(path = "data/WWTP/metaT/*.tsv")
-trans_tab = data.frame()
-trans_tab$GeneID = read.csv(files[1], sep='\t')$Geneid
-trans_tab$Length = read.csv(files[1], sep='\t')$Length
-for (file in files){
-  name = strsplit(strsplit(file,split='_')[[1]][-1], split='.')[[1]][1]
-  counts = read.csv(files[1], sep='\t')[,7]
-  trans_tab[name] = counts}
+files = list.files(path = 'data/WWTP/metaT/', pattern = '.tsv$')[3:53]
+first_file = read.csv(paste0('data/WWTP/metaT/', files[1]), sep='\t', comment.char = '#')
+trans_tab = data.frame(GeneID = first_file$Geneid,Length = first_file$Length)
+for (sample in metadata$Sample){
+  file = paste(c('data/WWTP/metaT/Bio17-1_NCBI_',sample,'.counts.tsv'), collapse = '')
+  count_file = read.csv(file, sep='\t', comment.char = '#')
+  counts = as.numeric(count_file[,endsWith(colnames(count_file), paste(c(sample,'.sorted.bam'), collapse = ''))])
+  #trans_tab[sample] = TPM(counts, trans_tab$Length)}
+  trans_tab[sample] = counts}
 write.csv(trans_tab, file = 'data/WWTP/WWTP_metaT.csv', row.names = F, quote = F)
-trans_tab = read.csv
+trans_tab = read.csv('data/WWTP/WWTP_metaT.csv')
 
+counts = trans_tab[,3:53]
+rownames(counts) = trans_tab$GeneID
+metadata$log_time_diff = log(as.integer(metadata$time_diff) + 1)
+dds <- DESeqDataSetFromMatrix(countData = counts,
+                              colData = metadata,
+                              design = ~ log_time_diff)
+dds <- DESeq(dds)
+res <- as.data.frame(results(dds, filterFun=ihw))
+res$Group = 'NotDEG'
+res$Group[(res$log2FoldChange > 0) & (res$padj < 0.05)] = 'PosDEG'
+res$Group[(res$log2FoldChange < 0) & (res$padj < 0.05)] = 'NegDEG'
 
+ggplot(res, aes(x=log2FoldChange,y=-log(pvalue),color=Group,size=baseMean)) + geom_point() + scale_color_jco() + theme_minimal()
 
+pos_deg_enrich = CalcEnrichment(gff, rownames(res)[res$Group=='PosDEG'])
+neg_deg_enrich = CalcEnrichment(gff, rownames(res)[res$Group=='NegDEG'])
 
+res$PolyCorr_cor = NA
+res$PolyCorr_padj = NA
+res$PolyCorr_group = NA
+for (gene in rownames(res)){
+  if(gene %in% mt_polycorr$pi_corr_res$gene_id){
+  pi_corr_coef = mt_polycorr$pi_corr_res$cor[mt_polycorr$pi_corr_res$gene_id == gene]
+  pi_corr_padj = mt_polycorr$pi_corr_res$padj[mt_polycorr$pi_corr_res$gene_id == gene]
+  if (!(is.na(pi_corr_padj))){
+  res$PolyCorr_cor[rownames(res) == gene] = pi_corr_coef
+  res$PolyCorr_padj[rownames(res) == gene] = pi_corr_padj
+  if (pi_corr_padj < 0.05){
+    if (pi_corr_coef > 0){res$PolyCorr_group[rownames(res) == gene] = 'PosAssoc'}
+    else {res$PolyCorr_group[rownames(res) == gene] = 'NegAssoc'}}
+  else{res$PolyCorr_group[rownames(res) == gene] = 'NotAssoc'}}}}
 
+ggplot(res, aes(x=PolyCorr_cor,y=log2FoldChange)) + geom_point() + geom_smooth()
+table(res$Group,res$PolyCorr_group)
 
+ggplot(res, aes(x=Group,y=PolyCorr_cor, color=Group)) + geom_boxplot() + stat_compare_means(label.y = 2.2) + 
+  stat_compare_means(comparisons = list(c('PosDEG','NegDEG'), c('PosDEG', 'NotDEG'), c('NegDEG', 'NotDEG')) ,label.y = c(1.6,1.8,2))  + 
+  scale_color_jco() + theme_minimal()
 
+# 2. data analysis
 
+genes_trans$Group = 'Not assoc.'
+genes_trans$Group[genes_trans$gene_id %in% mt_polycorr$pos_genes] = 'Pos. assoc.'
+genes_trans$Group[genes_trans$gene_id %in% mt_polycorr$neg_genes] = 'Neg. assoc.'
 
+genes_trans$Group_trans = 'Not DEG'
+genes_trans$Group_trans[(genes_trans$TPM_padj < 0.05) & (genes_trans$TPM_cor > 0)] = 'Pos. DEG'
+genes_trans$Group_trans[(genes_trans$TPM_padj < 0.05) & (genes_trans$TPM_cor < 0)] = 'Neg. DEG'
+
+ggplot(genes_trans, aes(x=Group,y=TPM_mean, color=Group)) + geom_boxplot() + stat_compare_means(label.y = 14) + 
+  stat_compare_means(comparisons = list(c('Pos. assoc.','Neg. assoc.'), c('Pos. assoc.', 'Not assoc.'), c('Neg. assoc.', 'Not assoc.')) ,label.y = c(10,11,12))  + 
+  scale_color_jco() + theme_minimal()
+
+ggplot(genes_trans, aes(x=Group,y=TPM_cor, color=Group)) + geom_boxplot() + stat_compare_means(label.y = 1.1) + 
+  stat_compare_means(comparisons = list(c('Pos. assoc.','Neg. assoc.'), c('Pos. assoc.', 'Not assoc.'), c('Neg. assoc.', 'Not assoc.')) ,label.y = c(0.65,0.8,0.9))  + 
+  scale_color_jco() + theme_minimal()
+
+na.omit(res[(res$PolyCorr_padj < 0.0001) & (res$PolyCorr_cor < 0) & (res$log2FoldChange < 0),])
+
+neg_deg = CalcEnrichment(gff, rownames(res)[res$Group=='NegDEG'])
+
+pos_deg = CalcEnrichment(gff, rownames(res)[res$Group=='PosDEG'])
 
 
 
