@@ -120,8 +120,9 @@ PolySummary <- function(data, samp_vec, n_cores){
 SummariseSamples <- function(poly_summary, val_depth){
   genes_to_keep = c()
   for (gene in unique(poly_summary$gene_id)){
+    if (sum(is.na(poly_summary$DEPTH[poly_summary$gene_id == gene])) == 0){
     if (min(poly_summary$DEPTH[poly_summary$gene_id == gene]) > val_depth){
-      genes_to_keep = c(genes_to_keep, gene)}}
+      genes_to_keep = c(genes_to_keep, gene)}}}
   poly_summary = poly_summary[poly_summary$gene_id %in% genes_to_keep,]
   sample_df = data.frame()
   for (sample in unique(poly_summary$sample)){

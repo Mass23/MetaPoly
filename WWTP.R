@@ -24,7 +24,7 @@ mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)], 5)
 write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
 # generate sample summaries
-mt_samples = SummariseSamples(mt_poly, 5)
+mt_samples = SummariseSamples(mt_poly, 10)
 
 # 2. data visualisation
 mt_samples$table$season = vapply(mt_samples$table$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
