@@ -52,7 +52,7 @@ GetGenesData <- function(gff, vcf){
   return(genes_data)}
 
 ############### 2. POLYMORPHISM SUMMARY ################ 
-CalcPi <- function(ac){return(ifelse(sum(ac > 0) > 1,1-sum((ac/sum(ac))**2), NA)}
+CalcPi <- function(ac){return(ifelse(sum(ac > 0) > 1,1-sum((ac/sum(ac))**2), NA))}
 CalcMAJF <- function(ac){return(max(ac / sum(ac)))}
   
 #if(sum(ac > 0) > 1){
