@@ -1,6 +1,6 @@
 setwd('~/Documents/PhD/Others/MetaPoly/MetaPoly')
 library(devtools)
-install_github('https://github.com/Mass23/MetaPoly', force = T)
+install_github('https://github.com/Mass23/MetaPoly', force = T, upgrade = 'never')
 library(MetaPoly)
 
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')

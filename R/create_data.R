@@ -106,9 +106,8 @@ PolySummary <- function(data, samp_vec, n_cores){
   registerDoMC(n_cores)
   cols = as.vector(samp_vec)
   PolyDf = foreach(i=1:length(data), .combine = rbind) %dopar% SumSnpData(data[[i]], samp_vec, cols)
-    
-  cat(' genes done\n')
   PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDf$MAJF)
+  print('- Done!')
   print(Sys.time()-t0)
   return(PolyDf)}
 
