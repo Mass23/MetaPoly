@@ -68,7 +68,7 @@ GetSnpData <- function(gene_data){
   npi = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]])), na.rm = T)
   return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}
 
-SumSnpData <- function(data, samp_vec){
+SumSnpData <- function(data, samp_vec, cols){
   if (nrow(data$gene_data) > 0){snp_data = GetSnpData(data$gene_data[,..cols])
                                        out_df = data.frame(gene_id = rep(data$gene_id,length(samp_vec)),
                                                 sample = as.vector(samp_vec),
@@ -104,7 +104,8 @@ PolySummary <- function(data, samp_vec, n_cores){
   print(' - Computing metrics')
   PolyDf = data.frame()
   registerDoMC(n_cores)
-  PolyDf = foreach(i=1:length(data), .combine = rbind) %dopar% SumSnpData(data[[i]], samp_vec)
+  cols = names(samp_vec)
+  PolyDf = foreach(i=1:length(data), .combine = rbind) %dopar% SumSnpData(data[[i]], samp_vec, cols)
     
   cat(' genes done\n')
   PolyDf$Cons_index = ((PolyDf$gene_length - PolyDf$SNP_N)/PolyDf$gene_length) + ((PolyDf$SNP_N/PolyDf$gene_length)*PolyDf$MAJF)
