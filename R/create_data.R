@@ -104,7 +104,7 @@ PolySummary <- function(data, samp_vec, n_cores){
   print(' - Computing metrics')
   PolyDf = data.frame()
   registerDoMC(n_cores)
-  cols = names(samp_vec)
+  cols = as.vector(samp_vec)
   PolyDf = foreach(i=1:length(data), .combine = rbind) %dopar% SumSnpData(data[[i]], samp_vec, cols)
     
   cat(' genes done\n')
