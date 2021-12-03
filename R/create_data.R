@@ -48,7 +48,7 @@ GetGenesData <- function(gff, vcf){
   n_genes <- nrow(gff)
   genes_data = lapply(1:n_genes, function(i) gff_to_gene_data(gff[i,], data[which((CONTIG==gff$CONTIG[i]) & (POS > gff$START[i]) & (POS < gff$END[i]))]))
   print(Sys.time()-t0)
-  print(' - Data loaded!')
+  print('   - Data loaded!')
   return(genes_data)}
 
 ############### 2. POLYMORPHISM SUMMARY ################ 
