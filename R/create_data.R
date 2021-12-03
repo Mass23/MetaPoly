@@ -69,7 +69,7 @@ GetSnpData <- function(gene_data){
   return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}
 
 SumSnpData <- function(data, samp_vec){
-  if (nrow(data[[i]]$gene_data) > 0){snp_data = GetSnpData(data$gene_data[,..cols])
+  if (nrow(data$gene_data) > 0){snp_data = GetSnpData(data$gene_data[,..cols])
                                        out_df = data.frame(gene_id = rep(data$gene_id,length(samp_vec)),
                                                 sample = as.vector(samp_vec),
                                                 variable = as.numeric(names(samp_vec)),
