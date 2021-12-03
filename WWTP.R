@@ -24,7 +24,7 @@ mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)], 5)
 write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
 # generate sample summaries
-mt_samples = SummariseSamples(mt_poly, 10)
+mt_samples = SummariseSamples(mt_poly, 5)
 
 # 2. data visualisation
 mt_samples$table$season = vapply(mt_samples$table$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
@@ -33,13 +33,16 @@ mt_samples$table$date = as.Date(vapply(mt_samples$table$sample, function(x) as.c
 mt_samples$table$group = 'Baseline'
 mt_samples$table$group[mt_samples$table$sample %in% c('D05','D15')] = 'Shift'
 
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
 p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
   geom_smooth(mt_samples$table[mt_samples$table$group == 'Baseline',], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank())
 
 p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PI,color=season,shape=group), size=5, alpha=0.7) + 
   geom_smooth(mt_samples$table[mt_samples$table$group == 'Baseline',], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PI,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('Log Depth') + ylab('Nuc. Diversity') + scale_color_jco() + theme_minimal()
+  xlab('Log Depth') + ylab('π at poly. sites') + scale_color_jco() + theme_minimal()
 ggarrange(p1,p2,nrow = 2,align='v',  common.legend = TRUE, legend = 'right')
 ggsave('figures/fig1_WWTP_poly_summary.jpg', width=4,height = 6)
 
@@ -47,11 +50,15 @@ ggsave('figures/fig1_WWTP_poly_summary.jpg', width=4,height = 6)
 mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
 summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6721
 mod_snp_n_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
-summary(mod_snp_n_shift) # shift p = 3.31e-06, r2 = 0.9983
+summary(mod_snp_n_shift) # shift p = 3.31e-06 , adj. r2 = 0.9983 
 mod_ndiv_all = lm(data=mt_samples$table, MEAN_PI ~ log(MEAN_DEPTH):season)
-summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6721
+summary(mod_ndiv_all) # adj. r2 = 0.659
+# log(MEAN_DEPTH):seasonAutumn -0.003158   0.004738  -0.667  0.50836    
+# log(MEAN_DEPTH):seasonSpring -0.013571   0.003902  -3.478  0.00112 ** 
+# log(MEAN_DEPTH):seasonSummer -0.011145   0.004289  -2.598  0.01255 *  
+# log(MEAN_DEPTH):seasonWinter -0.004500   0.003916  -1.149  0.25642
 mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_PI ~ log(MEAN_DEPTH) + group)
-summary(mod_ndiv_shift) # shift p = 0.6, r2 = 0.9631
+summary(mod_ndiv_shift) # shift p = 0.6, adj. r2 = 0.4643 
 
 ################# POLYCORR ################# 
 # 1. data generation

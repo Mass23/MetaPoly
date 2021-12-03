@@ -52,7 +52,7 @@ GetGenesData <- function(gff, vcf){
   return(genes_data)}
 
 ############### 2. POLYMORPHISM SUMMARY ################ 
-CalcPi <- function(ac){return(1-sum((ac/sum(ac))**2))}
+CalcPi <- function(ac){return(ifelse(sum(ac > 0) > 1,1-sum((ac/sum(ac))**2), NA)}
 CalcMAJF <- function(ac){return(max(ac / sum(ac)))}
   
 #if(sum(ac > 0) > 1){
@@ -65,8 +65,8 @@ GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))))
   snp_n = colSums(apply(gene_data, c(1,2), function(ac) ifelse(length(ac[[1]][ac[[1]] > 0]) > 1, 1, 0)))
   majf = colMeans(apply(gene_data, c(1,2), function(ac) CalcMAJF(as.matrix(ac)[1][[1]])), na.rm = T)
-  npi = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]])), na.rm = T)
-  return(list(depth=depth,snp_n=snp_n,majf=majf,npi=npi))}
+  pipoly = colMeans(apply(gene_data, c(1,2), function(ac) CalcPi(as.matrix(ac)[1][[1]]), na.rm = T)
+  return(list(depth=depth,snp_n=snp_n,majf=majf,pipoly=pipoly))}
 
 SumSnpData <- function(data, samp_vec, cols){
   if (nrow(data$gene_data) > 0){snp_data = GetSnpData(data$gene_data[,..cols])
@@ -76,7 +76,7 @@ SumSnpData <- function(data, samp_vec, cols){
                                                 SNP_N = snp_data$snp_n,
                                                 DEPTH = snp_data$depth,
                                                 MAJF = snp_data$majf,
-                                                PI = snp_data$npi,
+                                                PIP = snp_data$pipoly,
                                                 gene_length = rep(data$gene_length,length(samp_vec)))
                                       return(out_df)}
   else{snp_data = GetSnpData(data$gene_data[,..cols])
@@ -86,7 +86,7 @@ SumSnpData <- function(data, samp_vec, cols){
                            SNP_N = NA,
                            DEPTH = NA,
                            MAJF = NA,
-                           PI = NA,
+                           PIP = NA,
                            gene_length = rep(data$gene_length,length(samp_vec)))
   return(out_df)}}
 
@@ -127,9 +127,9 @@ SummariseSamples <- function(poly_summary, val_depth){
   sample_df = data.frame()
   for (sample in unique(poly_summary$sample)){
     mean_snp_den =  weighted.mean(poly_summary$SNP_N[poly_summary$sample == sample] / poly_summary$gene_length[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
-    mean_pi =  weighted.mean(poly_summary$PI[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
+    mean_pip =  weighted.mean(poly_summary$PIP[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_depth =  weighted.mean(poly_summary$DEPTH[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_cons =  weighted.mean(poly_summary$Cons_index[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
-    sample_df = rbind(sample_df, data.frame(sample=sample,MEAN_PI=mean_pi,MEAN_CONS_I=mean_cons,MEAN_SNP_DEN=mean_snp_den,MEAN_DEPTH=mean_depth,MEAN_MAJF=mean_majf))}
+    sample_df = rbind(sample_df, data.frame(sample=sample,MEAN_PIP=mean_pip,MEAN_CONS_I=mean_cons,MEAN_SNP_DEN=mean_snp_den,MEAN_DEPTH=mean_depth,MEAN_MAJF=mean_majf))}
   return(list(table=sample_df,n_genes=length(genes_to_keep)))}
