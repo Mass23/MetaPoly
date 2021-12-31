@@ -62,7 +62,6 @@ PolyDiv <- function(data, samp_vec){
   return(fst_df)}
 
 
-
 CalcFstNet <- function(data, samp_vec){
   fst_df = data.frame()
   g1 = as.vector(samp_vec[names(samp_vec) == 0])

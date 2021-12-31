@@ -3,7 +3,7 @@ library(devtools)
 install_github('https://github.com/Mass23/MetaPoly', force = T, upgrade = 'never')
 library(MetaPoly)
 
-vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_NCBI_filtered.bcf.gz')
+vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_merged.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
 gff <- read.delim("data/WWTP/Bio17-1.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
@@ -36,12 +36,12 @@ mt_samples$table$group[mt_samples$table$sample %in% c('D05','D15')] = 'Shift'
 library(ggplot2)
 library(ggpubr)
 library(ggsci)
-p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=MEAN_DEPTH,y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=MEAN_DEPTH,y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
+p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
+  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank()) 
-p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=MEAN_DEPTH,y=MEAN_PIP,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=MEAN_DEPTH,y=MEAN_PIP,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('Mean Depth') + ylab('π at poly. sites') + scale_color_jco() + theme_minimal() 
+p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PIP,color=season,shape=group), size=5, alpha=0.7) + 
+  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PIP,color=season), method='lm',se=F,fullrange = T) + 
+  xlab('log(Mean Depth)') + ylab('π at poly. sites') + scale_color_jco() + theme_minimal() 
 
 p3 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=time_diff,y=MEAN_SNP_DEN,color=season,size=5,shape=group), alpha=0.7) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + geom_smooth(method='gam') +
@@ -54,16 +54,15 @@ ggarrange(p1,p3,p2,p4,nrow = 2,ncol=2,align='h', common.legend = TRUE, legend = 
 ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 5)
 
 # 3. data analysis
-mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ MEAN_DEPTH:season)
-summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.4911
-mod_snp_n_shift_autumn = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ MEAN_DEPTH + group)
-summary(mod_snp_n_shift_autumn) # shift p = 2.04e-08 ***, adj. r2 = 0.9983 
+mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
+summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.7132
+mod_snp_n_shift_autumn = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
+summary(mod_snp_n_shift_autumn) # shift p = 0.207803    , adj. r2 = 0.9485
 
-
-mod_ndiv_all = lm(data=mt_samples$table, MEAN_PIP ~ MEAN_DEPTH:season)
-summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.61
-mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season %in% c('Autumn'),], MEAN_PIP ~ MEAN_DEPTH + group)
-summary(mod_ndiv_shift) # shift p = 0.00763 ** , adj. r2 = 0.9333 
+mod_ndiv_all = lm(data=mt_samples$table, MEAN_PIP ~ log(MEAN_DEPTH):season)
+summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6319
+mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season %in% c('Autumn'),], MEAN_PIP ~ log(MEAN_DEPTH) + group)
+summary(mod_ndiv_shift) # shift p = 0.7028 , adj. r2 = 0.8566 
 
 ################# POLYCORR ################# 
 # 1. data generation
@@ -71,7 +70,7 @@ metadata$time_diff_norm = (metadata$time_diff - mean(metadata$time_diff))/sd(met
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$time_diff_norm
 
-mt_polycorr = PolyCorr(mt_poly[mt_poly$gene_id %in% genes_to_keep,], 9, samples_vec, 'fdr')
+mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'fig_polycorr', boolean_var = F)
 
 cog_func = read.csv('data/cog-20.def.tab',sep = '\t',header = F)
@@ -177,7 +176,7 @@ library(gtools)
 library(igraph)
 library(lubridate)
 samples_vec = samples_vec[grepl('D',samples_vec)]
-poly_net = PolyNet(data_mt, samples_vec, mt_poly, 10, 10)
+poly_net = PolyNet(data_mt, samples_vec, mt_poly, 6, 3)
 
 library(dplyr)
 net_data = as.data.frame(poly_net %>% group_by(s1,s2) %>% summarise(fst=mean(FST, na.rm=T)))
@@ -239,8 +238,9 @@ pdf('figures/fst_net.pdf')
 plot(graph, edge.width = E(graph)$weight, vertex.color=V(graph)$color, layout = layout_nicely, vertex.size = 10)
 dev.off()
 
-metadata$cluster_graph = vapply(metadata$Sample, function(x) as.character(membership(c1)[names(membership(c1)) == x]), FUN.VALUE = character(1))
-ggplot(metadata, aes(x=Date,y=cluster_graph,color=cluster_graph)) + geom_point(size=5) + xlab('') + ylab('Cluster') +
+metadata$cluster_graph = vapply(metadata$Sample, function(x) ifelse(x %in% c('D05','D15'), '', as.character(membership(c1)[names(membership(c1)) == x])), FUN.VALUE = character(1))
+metadata$cluster_graph[metadata$cluster_graph == ''] = NA
+ggplot(na.omit(metadata), aes(x=Date,y=cluster_graph,color=cluster_graph)) + geom_point(size=5) + xlab('') + ylab('Cluster') +
   scale_color_manual(values=c('steelblue','lightgreen','forestgreen','tomato')) + theme_minimal() + theme(legend.position = 'none')
 ggsave('figures/clusters_seasons.pdf', width = 4,height = 2)
 
