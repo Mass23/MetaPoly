@@ -136,6 +136,7 @@ for (i in 1:nrow(cog_func)){
   
   gff$sign = 'b_No'
   gff$sign[gff$gene %in% gene_list] = 'a_Yes'
+  sign_cogs = as.vector(na.omit(unique(gff$cog[gff$gene %in% gene_list])))
 
   full_con_tab = table(gff$cog_f, gff$sign)
   enrich_df = data.frame()
@@ -149,8 +150,9 @@ for (i in 1:nrow(cog_func)){
       or = fish_test$estimate
       l_or = fish_test$conf.int[1]
       h_or = fish_test$conf.int[2]
-      enrich_df = rbind(enrich_df, data.frame(Function=cog_func, p=p, OR=or, low_CI=l_or, high_CI=h_or))}}
+      func_cogs = sign_cogs[sign_cogs %in% gff$cog[gff$cog_f == cog_func]
+      enrich_df = rbind(enrich_df, data.frame(Function=cog_func, p=p, OR=or, low_CI=l_or, high_CI=h_or, cogs=paste(func_cogs, collapse=',')))}}
   enrich_df$padj = p.adjust(enrich_df$p, method = 'holm')
   enrich_df$Function_long = vapply(enrich_df$Function, function(x) as.character(cog_functions[x]), character(1))
-  return(list(enrich=enrich_df,cogs=as.vector(na.omit(unique(gff$cog[gff$gene %in% gene_list])))))}
+  return(list(enrich=enrich_df,cogs=sign_cogs))}
 

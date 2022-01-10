@@ -5,6 +5,13 @@ library(MetaPoly)
 
 vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_merged.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
+cont_names = names(genome)
+cont_names = vapply(cont_names, function(x) strsplit(x, ' ')[[1]][1], FUN.VALUE = character(1))
+vcf_f <- vcf[getCHROM(vcf) %in% cont_names,]
+vcfR::write.vcf(vcf_f, file='data/WWTP/Bio17-1_filtered.vcf.gz')
+
+vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_filtered.vcf.gz')
+genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
 gff <- read.delim("data/WWTP/Bio17-1.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
 
@@ -12,8 +19,7 @@ metadata = read.csv('data/WWTP/WWTP_samples.csv')
 metadata = metadata[grepl('D',metadata$Sample),]
 samples_vec = metadata$Sample
 metadata$Date = as.Date(metadata$Date, format = "%Y-%m-%d")
-metadata$time_diff = as.integer(abs(difftime(metadata$Date, as.Date('2011-11-23', tryFormats = "%Y-%m-%d"), units='days')))
-names(samples_vec) = as.numeric(vapply(samples_vec, function(x) metadata$time_diff[metadata$Sample == x], FUN.VALUE = numeric(1)))
+names(samples_vec) = as.numeric(vapply(samples_vec, function(x) metadata$Date[metadata$Sample == x], FUN.VALUE = numeric(1)))
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
@@ -43,11 +49,11 @@ p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=M
   geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PIP,color=season), method='lm',se=F,fullrange = T) + 
   xlab('log(Mean Depth)') + ylab('π at poly. sites') + scale_color_jco() + theme_minimal() 
 
-p3 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=time_diff,y=MEAN_SNP_DEN,color=season,size=5,shape=group), alpha=0.7) + 
+p3 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MEAN_SNP_DEN,color=season,size=5,shape=group), alpha=0.7) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + geom_smooth(method='gam') +
   theme_minimal() + theme(axis.text.x = element_blank()) 
-p4 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=time_diff,y=MEAN_PIP,color=season,size=5,shape=group), alpha=0.7) + 
-  xlab('Time difference to the shift [days]') + ylab('π at poly. sites') + scale_color_jco() + geom_smooth(method='gam') +
+p4 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MEAN_PIP,color=season,size=5,shape=group), alpha=0.7) + 
+  xlab('Date') + ylab('π at poly. sites') + scale_color_jco() + geom_smooth(method='gam') +
   theme_minimal() + theme(axis.text.x = element_blank()) 
 
 ggarrange(p1,p3,p2,p4,nrow = 2,ncol=2,align='h', common.legend = TRUE, legend = 'right')
@@ -55,22 +61,22 @@ ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 5)
 
 # 3. data analysis
 mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
-summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.7132
+summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.05, r2 = 0.1986
 mod_snp_n_shift_autumn = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
-summary(mod_snp_n_shift_autumn) # shift p = 0.207803    , adj. r2 = 0.9485
+summary(mod_snp_n_shift_autumn) # shift p = 0.000732    , adj. r2 = 0.9458
 
 mod_ndiv_all = lm(data=mt_samples$table, MEAN_PIP ~ log(MEAN_DEPTH):season)
-summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6319
+summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.67
 mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season %in% c('Autumn'),], MEAN_PIP ~ log(MEAN_DEPTH) + group)
-summary(mod_ndiv_shift) # shift p = 0.7028 , adj. r2 = 0.8566 
+summary(mod_ndiv_shift) # shift p = 1.57e-05 , adj. r2 = 0.9968 
 
 ################# POLYCORR ################# 
 # 1. data generation
-metadata$time_diff_norm = (metadata$time_diff - mean(metadata$time_diff))/sd(metadata$time_diff)
+metadata$time_diff = log(abs(as.integer(metadata$Date - as.Date(metadata$Date[metadata$Sample == 'D15']))))
 samples_vec = metadata$Sample
-names(samples_vec) = metadata$time_diff_norm
+names(samples_vec) = metadata$time_diff
 
-mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'fdr')
+mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'holm')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'fig_polycorr', boolean_var = F)
 
 cog_func = read.csv('data/cog-20.def.tab',sep = '\t',header = F)
