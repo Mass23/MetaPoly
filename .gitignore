@@ -3,3 +3,5 @@ WWTP_story/
 GFS_story/
 data/
 .RData
+.Rhistory
+.git
