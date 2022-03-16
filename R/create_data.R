@@ -113,7 +113,7 @@ PolySummary <- function(data, samp_vec, n_cores){
 
 
 ModelPoly <- function(data){
-  model_res = summary(lm(sub_data, formula = SNP_N/DEPTH ~ gene_length))$coefficients
+  model_res = summary(lm(data, formula = SNP_N/DEPTH ~ gene_length))$coefficients
   intercept = model_res[1,1]
   intercept_low = intercept - (2*model_res[1,2])
   intercept_high = intercept + (2*model_res[1,2])
