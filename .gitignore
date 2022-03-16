@@ -2,6 +2,7 @@
 WWTP_story/
 GFS_story/
 data/
+data
 .RData
 .Rhistory
 .git

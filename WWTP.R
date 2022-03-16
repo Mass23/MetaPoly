@@ -37,15 +37,15 @@ write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
 
 
-sub_data = mt_poly[mt_poly$sample %in% c('D07','D15'),]
+sub_data = mt_poly[mt_poly$sample %in% c('D07','D11','D15','D23'),]
 sub_data = sub_data[sub_data$DEPTH >= 5,]
 sub_data = sub_data[sub_data$gene_id %in% names(table(sub_data$gene_id))[table(sub_data$gene_id) > 1],]
-ggplot(sub_data, aes(x=gene_length,y=log((SNP_N/DEPTH)+1),color=sample)) + geom_point() + geom_smooth(method = 'lm')
+ggplot(sub_data, aes(x=gene_length,y=SNP_N/DEPTH,color=sample)) + geom_point() + geom_smooth(method = 'lm') + scale_y_log10()
 
-lm(sub_data, formula = log((SNP_N/DEPTH) + 1) ~ sample + sample:gene_length)
+lm(sub_data, formula = SNP_N/DEPTH ~ sample + sample:gene_length)
 
 # generate sample summaries
-mt_samples = SummariseSamples(mt_poly, 6)
+mt_samples = SummariseSamples(mt_poly, 5)
 
 # 2. data visualisation
 mt_samples$table$season = vapply(mt_samples$table$sample, function(x) metadata$Season[metadata$Sample == x], FUN.VALUE = character(1))
