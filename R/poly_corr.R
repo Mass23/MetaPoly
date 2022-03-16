@@ -1,6 +1,6 @@
 ################# POLYCORR ################# 
 fit_cor_gene <- function(gene_data, gene, min_samp, samp_vec){
-  gene_data = na.omit(gene_data[gene_data$DEPTH > 9,])
+  gene_data = na.omit(gene_data[gene_data$DEPTH > 0,])
   if (length(unique(gene_data$sample)) > min_samp){
   cor_test = cor.test(gene_data$res_m, gene_data$variable)
   p = as.numeric(cor_test$p.value)
@@ -29,8 +29,10 @@ PolyCorr <- function(data, min_samp, samp_vec, p_corr='holm'){
   t0 = Sys.time()
   
   print(' - Fitting a zero-inflated poisson model on the data...')
-  data = as.data.table(data[,colnames(data) %in% c('SNP_N', 'DEPTH', 'gene_length', 'sample', 'gene_id')])
-  model_df = data[data$DEPTH>0,]
+  data = as.data.frame(data)
+  print(data)
+  model_df = na.omit(data[,colnames(data) %in% c('SNP_N', 'DEPTH', 'gene_length', 'sample', 'gene_id')])
+  print(nrow(is.na(model_df)))
   model = pscl::zeroinfl(SNP_N ~ log(DEPTH) + gene_length + as.factor(sample) | log(DEPTH), data = model_df)
   print(summary(model))
   model_df$res_m = model$residuals
@@ -93,15 +95,15 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
 #' @export
 CalcEnrichment <- function(gff, gene_list){
   cog_table = read.delim('data/cog-20.def.tab', sep='\t', header = F)
-for (i in 1:nrow(cog_func)){
-  row = cog_table[i,]
-  if (length(strsplit(row$V2,'')[[1]]) > 1){
-      others = strsplit(row$V2,'')[[1]][2:length(strsplit(row$V2,'')[[1]])]
-      cog_table $V2[i] = as.character(strsplit(row$V2,'')[[1]][1])
-      for (cat in others){
-        mod_row = row
-        mod_row$V2 = cat
-        cog_table = rbind(cog_table, mod_row)}}}
+  for (i in 1:nrow(cog_func)){
+    row = cog_table[i,]
+    if (length(strsplit(row$V2,'')[[1]]) > 1){
+        others = strsplit(row$V2,'')[[1]][2:length(strsplit(row$V2,'')[[1]])]
+        cog_table$V2[i] = as.character(strsplit(row$V2,'')[[1]][1])
+        for (cat in others){
+          mod_row = row
+          mod_row$V2 = cat
+          cog_table = rbind(cog_table, mod_row)}}}
   cog_functions = c('J'='Translation, ribosomal structure and biogenesis',
                   'A'='RNA processing and modification',
                   'K'='Transcription',
@@ -136,7 +138,6 @@ for (i in 1:nrow(cog_func)){
   
   gff$sign = 'b_No'
   gff$sign[gff$gene %in% gene_list] = 'a_Yes'
-  sign_cogs = as.vector(na.omit(unique(gff$cog[gff$gene %in% gene_list])))
 
   full_con_tab = table(gff$cog_f, gff$sign)
   enrich_df = data.frame()
@@ -150,9 +151,9 @@ for (i in 1:nrow(cog_func)){
       or = fish_test$estimate
       l_or = fish_test$conf.int[1]
       h_or = fish_test$conf.int[2]
-      func_cogs = sign_cogs[sign_cogs %in% unique(gff$cog[gff$cog_f == cog_func])]
+      func_cogs = gff$cog[(gff$cog_f == cog_func) & (gff$gene %in% gene_list)]
       enrich_df = rbind(enrich_df, data.frame(Function=cog_func, p=p, OR=or, low_CI=l_or, high_CI=h_or, cogs=paste(func_cogs, collapse=',')))}}
   enrich_df$padj = p.adjust(enrich_df$p, method = 'holm')
   enrich_df$Function_long = vapply(enrich_df$Function, function(x) as.character(cog_functions[x]), character(1))
-  return(list(enrich=enrich_df,cogs=sign_cogs))}
+  return(enrich_df)}
 

@@ -3,14 +3,18 @@ library(devtools)
 install_github('https://github.com/Mass23/MetaPoly', force = T, upgrade = 'never')
 library(MetaPoly)
 
-vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_merged.bcf.gz')
-genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
-cont_names = names(genome)
-cont_names = vapply(cont_names, function(x) strsplit(x, ' ')[[1]][1], FUN.VALUE = character(1))
-vcf_f <- vcf[getCHROM(vcf) %in% cont_names,]
-vcfR::write.vcf(vcf_f, file='data/WWTP/Bio17-1_filtered.vcf.gz')
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
 
-vcf = vcfR::read.vcfR('data/WWTP/Bio17-1_filtered.vcf.gz')
+#vcf = vcfR::read.vcfR('data/WWTP/concatenated_nonMP_Bio17-1_filtered.bcf.gz')
+#genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
+#cont_names = names(genome)
+#cont_names = vapply(cont_names, function(x) strsplit(x, ' ')[[1]][1], FUN.VALUE = character(1))
+#vcf_f <- vcf[getCHROM(vcf) %in% cont_names,]
+#vcfR::write.vcf(vcf_f, file='data/WWTP/Bio17-1_filtered.vcf.gz')
+
+vcf = vcfR::read.vcfR('data/WWTP/concatenated_nonMP_Bio17-1_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
 gff <- read.delim("data/WWTP/Bio17-1.gff", header=F, comment.char="#", sep='\t', quote = '')
 gff = gff[gff$V3 == 'CDS',]
@@ -19,16 +23,27 @@ metadata = read.csv('data/WWTP/WWTP_samples.csv')
 metadata = metadata[grepl('D',metadata$Sample),]
 samples_vec = metadata$Sample
 metadata$Date = as.Date(metadata$Date, format = "%Y-%m-%d")
+metadata$time_diff = abs(metadata$Date - metadata$Date[metadata$Sample=='D15'])
 names(samples_vec) = as.numeric(vapply(samples_vec, function(x) metadata$Date[metadata$Sample == x], FUN.VALUE = numeric(1)))
 
 # Load data, get polymorphism summary
 data_mt = GetGenesData(gff, vcf)
 
-################# POLYSUMMARY ################# 
+######################################################################################################
+# POLYSUMMARY
 # 1. data generation
-mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)], 5)
+mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)], 6)
 write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
+
+
+sub_data = mt_poly[mt_poly$sample %in% c('D07','D15'),]
+sub_data = sub_data[sub_data$DEPTH >= 5,]
+sub_data = sub_data[sub_data$gene_id %in% names(table(sub_data$gene_id))[table(sub_data$gene_id) > 1],]
+ggplot(sub_data, aes(x=gene_length,y=log((SNP_N/DEPTH)+1),color=sample)) + geom_point() + geom_smooth(method = 'lm')
+
+lm(sub_data, formula = log((SNP_N/DEPTH) + 1) ~ sample + sample:gene_length)
+
 # generate sample summaries
 mt_samples = SummariseSamples(mt_poly, 6)
 
@@ -39,9 +54,6 @@ mt_samples$table$time_diff = vapply(mt_samples$table$sample, function(x) metadat
 mt_samples$table$group = 'Baseline'
 mt_samples$table$group[mt_samples$table$sample %in% c('D05','D15')] = 'Shift'
 
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
 p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
   geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
   xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank()) 
@@ -70,13 +82,14 @@ summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.6
 mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season %in% c('Autumn'),], MEAN_PIP ~ log(MEAN_DEPTH) + group)
 summary(mod_ndiv_shift) # shift p = 1.57e-05 , adj. r2 = 0.9968 
 
-################# POLYCORR ################# 
+######################################################################################################
+# POLYCORR
 # 1. data generation
-metadata$time_diff = log(abs(as.integer(metadata$Date - as.Date(metadata$Date[metadata$Sample == 'D15']))))
+metadata$time_diff = log(abs(as.integer(metadata$Date - as.Date(metadata$Date[metadata$Sample == 'D15']))+1))
 samples_vec = metadata$Sample
 names(samples_vec) = metadata$time_diff
 
-mt_polycorr = PolyCorr(mt_poly, 9, samples_vec, 'holm')
+mt_polycorr = PolyCorr(mt_poly, 0, samples_vec, 'holm')
 PlotPolyCorr(mt_polycorr$pi_corr_res, mt_polycorr$coefs, 'fig_polycorr', boolean_var = F)
 
 cog_func = read.csv('data/cog-20.def.tab',sep = '\t',header = F)
@@ -85,28 +98,64 @@ gff_to_test = gff[gff$gene %in% mt_polycorr$pi_corr_res$gene_id,]
 pos_enrich = CalcEnrichment(gff_to_test, mt_polycorr$pos_genes)
 neg_enrich = CalcEnrichment(gff_to_test, mt_polycorr$neg_genes)
 
-mt_polycorr$pi_corr_res$sign = 'No'
-mt_polycorr$pi_corr_res$sign[mt_polycorr$pi_corr_res$padj < 0.05] = 'Yes'
-ggplot(mt_polycorr$pi_corr_res, aes(x=cor,y=-log(p),color=sign)) + geom_point() + theme_minimal() + scale_color_jco()
-
 # 2. data analysis
 pos_enrich$enrich[(pos_enrich$enrich$padj < 0.05) & (pos_enrich$enrich$OR > 1),]
 neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]
-#              Function            p       OR   low_CI   high_CI         padj                                  Function_long
-# odds ratio1         C 4.837073e-11 3.412390 2.340954 4.985502 1.015785e-09                Energy production and conversion
-# odds ratio3         E 8.230451e-04 1.852562 1.285770 2.650564 1.399177e-02             Amino acid transport and metabolism
-# odds ratio4         F 1.331709e-04 2.906075 1.631250 5.178100 2.530248e-03             Nucleotide transport and metabolism
-# odds ratio7         I 2.042059e-12 3.635433 2.507910 5.286764 4.492531e-11                  Lipid transport and metabolism
-# odds ratio8         J 3.832976e-05 2.055940 1.448588 2.902777 7.665953e-04 Translation, ribosomal structure and biogenesis
-# odds ratio10        L 3.292624e-04 2.130042 1.392862 3.234804 5.926723e-03           Replication, recombination and repair
+#             Function           p       OR   low_CI  high_CI                                                            cogs        padj                  Function_long
+# odds ratio7        I 0.000462648 3.780909 1.771067 7.357895 COG2230,COG1960,COG1012,COG1804,COG1022,COG0743,COG1028,COG0761  0.01017826 Lipid transport and metabolism
+# COG2230 - Cyclopropane fatty-acyl-phospholipid synthase and related methyltransferases
+# COG1960 - Acyl-CoA dehydrogenase related to the alkylation response protein (Fatty acid biosynthesis)
+# COG1012 - Acyl-CoA reductase or other NAD-dependent aldehyde dehydrogenase (Proline degradation)
+# COG1804 - Crotonobetainyl-CoA:carnitine CoA-transferase CaiB and related acyl-CoA transferases
+# COG1022 - Long-chain acyl-CoA synthetase (AMP-forming)
+# COG0743 - 1-deoxy-D-xylulose 5-phosphate reductoisomerase (Isoprenoid biosynthesis)
+# COG1028 - NAD(P)-dependent dehydrogenase, short-chain alcohol dehydrogenase family (Fatty acid biosynthesis)
+# COG0761 - 4-Hydroxy-3-methylbut-2-enyl diphosphate reductase (Isoprenoid biosynthesis)
 
 # 3. data visualisation
-ggplot(neg_enrich$enrich[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1),]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
+ggplot(neg_enrich$enrich[(neg_enrich$enrich$OR > 1),]) + geom_point(aes(x=OR,y=Function_long,color=Function_long),size=10) + geom_errorbarh(aes(xmin=low_CI,xmax=high_CI,y=Function_long,color=Function_long),size=2) + 
   xlab('Odds ratio') + ylab('') + theme_minimal() + scale_color_jco() + theme(legend.position = 'none') + geom_vline(xintercept = 1, linetype='dashed')
-ggsave('figures/Neg_enrich.pdf', width=6, height = 5)
+ggsave('figures/Neg_enrich.pdf', width=8, height = 5)
 
-out_sign_neg = cog_func[(cog_func$V1 %in% neg_enrich$cogs) & (cog_func$V2 %in% neg_enrich$enrich$Function[(neg_enrich$enrich$padj < 0.05) & (neg_enrich$enrich$OR > 1)]),]
-write.csv(out_sign_neg, file='WWTP_mt_neg_sign_funcs_cogs.csv')
+
+######################################################################################################
+# POLYCORR
+# 1. data generation
+samples_vec = metadata$Sample
+names(samples_vec) = as.integer(metadata$Date > as.Date(metadata$Date[metadata$Sample == 'D15']))
+
+mt_div = PolyDiv(data_mt, samples_vec)
+mt_div_norm = na.omit(mt_div[mt_div$SNP_N >= 5,])
+fst_outliers = mt_div_norm$gene_id[mt_div_norm$FST > quantile(mt_div_norm$FST, probs = 0.95)]
+mt_div_norm$start = vapply(mt_div_norm$gene_id, function(x) gff$V4[gff$gene == x], FUN.VALUE = numeric(1))
+mt_div_norm$contig = vapply(mt_div_norm$gene_id, function(x) gff$V1[gff$gene == x], FUN.VALUE = character(1))
+
+ggplot(mt_div_norm, aes(x=start,y=FST)) + facet_grid(~contig, space = 'free_x', scales = 'free_x') + theme_minimal() + geom_point()
+
+mt_div_norm[mt_div_norm$FST > 0.05,]
+
+gff[gff$gene == 'HAEMFFGE_00989',]
+gff[gff$gene == 'HAEMFFGE_00990',]
+gff[gff$gene == 'HAEMFFGE_00991',]
+gff[gff$gene == 'HAEMFFGE_00993',]
+gff[gff$gene == 'HAEMFFGE_00996',]
+
+gff[gff$gene == 'HAEMFFGE_01277',]
+
+gff[gff$gene == 'HAEMFFGE_02900',]
+
+gff[gff$gene == 'HAEMFFGE_03314',]
+
+# 2. data analysis
+gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
+gff_to_test = gff[gff$gene %in% mt_div_norm$gene_id,]
+fst_enrichment = CalcEnrichment(gff_to_test, fst_outliers)
+fst_enrichment$enrich[fst_enrichment$enrich$padj < 0.05,]
+# odds ratio8        J 0.00161255 2.355162 1.373683 3.89203 0.0354761 Translation, ribosomal structure and biogenesis
+
+
+
+
 
 
 
@@ -253,20 +302,20 @@ ggsave('figures/clusters_seasons.pdf', width = 4,height = 2)
 
 
 
-# Compare before - during
-samples_vec = metadata$Sample
-names(samples_vec) = rep(0,length(samples_vec))
-names(samples_vec)[samples_vec %in% c('D05','D15','D20','D28')] = 1
 
-mt_fst_bd = PolyDiv(data_mt, samples_vec)
-mt_fst_bd_norm = na.omit(mt_fst_bd[mt_fst_bd$SNP_N >= 10,])
-fst_bd_outliers = mt_fst_bd_norm$gene_id[mt_fst_bd_norm$FST > quantile(mt_fst_bd_norm$FST, probs = 0.9)]
 
-gff$gene = vapply(gff$V9, function(x) strsplit(strsplit(x,';')[[1]][1],'ID=')[[1]][2], FUN.VALUE = character(1))
-gff_to_test = gff[gff$gene %in% mt_fst_bd_norm$gene_id,]
-fst_bd_enrichment = CalcEnrichment(gff_to_test, fst_bd_outliers)
-fst_bd_enrichment$enrich[fst_bd_enrichment$enrich$padj < 0.05,]
-# odds ratio8        J 0.00161255 2.355162 1.373683 3.89203 0.0354761 Translation, ribosomal structure and biogenesis
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #####################
