@@ -113,14 +113,10 @@ PolySummary <- function(data, samp_vec, n_cores){
 
 
 ModelPoly <- function(data){
-  model_res = summary(lm(data, formula = SNP_N ~ log(DEPTH))$coefficients
-  intercept = model_res[1,1]
-  intercept_low = intercept - (2*model_res[1,2])
-  intercept_high = intercept + (2*model_res[1,2])
-  slope = model_res[2,1]
-  slope_low = intercept - (2*model_res[2,2])
-  slope_high = intercept + (2*model_res[2,2])
-  return(list(intercept = intercept, slope = slope, intercept_low = intercept_low, intercept_high = intercept_high, slope_low = slope_low, slope_high = slope_high))}
+  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH), data = data)
+  intercept = coef(model_res, model = "count")['(Intercept)']
+  slope = coef(model_res, model = "count")['log(DEPTH)']
+  return(list(intercept = intercept, slope = slope))}
 
 #' SummariseSamples
 #'
@@ -152,9 +148,5 @@ SummariseSamples <- function(poly_summary, val_depth){
                                             MEAN_DEPTH=mean_depth,
                                             MEAN_MAJF=mean_majf,
                                             MODEL_INT=poly_model$intercept,
-                                            MODEL_INT_low=poly_model$intercept_low,
-                                            MODEL_INT_high=poly_model$intercept_high,
-                                            MODEL_SLOPE=poly_model$slope,
-                                            MODEL_SLOPE_low=poly_model$slope_low,
-                                            MODEL_SLOPE_high=poly_model$slope_high))}
+                                            MODEL_SLOPE=poly_model$slope))}
   return(list(table=sample_df,n_genes=length(genes_to_keep)))}

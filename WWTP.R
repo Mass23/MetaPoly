@@ -7,13 +7,6 @@ library(ggplot2)
 library(ggpubr)
 library(ggsci)
 
-#vcf = vcfR::read.vcfR('data/WWTP/concatenated_nonMP_Bio17-1_filtered.bcf.gz')
-#genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
-#cont_names = names(genome)
-#cont_names = vapply(cont_names, function(x) strsplit(x, ' ')[[1]][1], FUN.VALUE = character(1))
-#vcf_f <- vcf[getCHROM(vcf) %in% cont_names,]
-#vcfR::write.vcf(vcf_f, file='data/WWTP/Bio17-1_filtered.vcf.gz')
-
 vcf = vcfR::read.vcfR('data/WWTP/concatenated_nonMP_Bio17-1_filtered.bcf.gz')
 genome = ape::read.dna('data/WWTP/Bio17-1_NCBI.fa', format = "fasta")
 gff <- read.delim("data/WWTP/Bio17-1.gff", header=F, comment.char="#", sep='\t', quote = '')
@@ -35,15 +28,6 @@ data_mt = GetGenesData(gff, vcf)
 mt_poly = PolySummary(data_mt, samples_vec[grepl('D',samples_vec)], 6)
 write.csv(mt_poly, file = 'data/WWTP/WWTP_PolySummary.csv', row.names = F, quote = F)
 mt_poly = read.csv('data/WWTP/WWTP_PolySummary.csv')
-
-
-sub_data = mt_poly[mt_poly$sample %in% c('D07','D11','D15','D23'),]
-sub_data = sub_data[sub_data$DEPTH >= 5,]
-sub_data = sub_data[sub_data$gene_id %in% names(table(sub_data$gene_id))[table(sub_data$gene_id) > 1],]
-ggplot(sub_data, aes(x=gene_length,y=SNP_N/DEPTH,color=sample)) + geom_point() + geom_smooth(method = 'lm') + scale_y_log10()
-
-lm(sub_data, formula = SNP_N/DEPTH ~ sample + sample:gene_length)
-
 # generate sample summaries
 mt_samples = SummariseSamples(mt_poly, 5)
 
@@ -54,21 +38,12 @@ mt_samples$table$time_diff = vapply(mt_samples$table$sample, function(x) metadat
 mt_samples$table$group = 'Baseline'
 mt_samples$table$group[mt_samples$table$sample %in% c('D05','D15')] = 'Shift'
 
-p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('') + ylab('SNP Den.') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank()) 
-p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PIP,color=season,shape=group), size=5, alpha=0.7) + 
-  geom_smooth(mt_samples$table[(mt_samples$table$group == 'Baseline'),], mapping = aes(x=log(MEAN_DEPTH),y=MEAN_PIP,color=season), method='lm',se=F,fullrange = T) + 
-  xlab('log(Mean Depth)') + ylab('π at poly. sites') + scale_color_jco() + theme_minimal() 
+p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_INT,color=season,shape=group), size=5, alpha=0.7) + 
+  xlab('') + ylab('Model Intercept') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank()) 
+p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_SLOPE,color=season,shape=group), size=5, alpha=0.7) + 
+  xlab('Date') + ylab('Model Slope') + scale_color_jco() + theme_minimal() 
 
-p3 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MEAN_SNP_DEN,color=season,size=5,shape=group), alpha=0.7) + 
-  xlab('') + ylab('SNP Den.') + scale_color_jco() + geom_smooth(method='gam') +
-  theme_minimal() + theme(axis.text.x = element_blank()) 
-p4 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MEAN_PIP,color=season,size=5,shape=group), alpha=0.7) + 
-  xlab('Date') + ylab('π at poly. sites') + scale_color_jco() + geom_smooth(method='gam') +
-  theme_minimal() + theme(axis.text.x = element_blank()) 
-
-ggarrange(p1,p3,p2,p4,nrow = 2,ncol=2,align='h', common.legend = TRUE, legend = 'right')
+ggarrange(p1,p2,nrow = 2,ncol=1,align='h', common.legend = TRUE, legend = 'right')
 ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 5)
 
 # 3. data analysis
