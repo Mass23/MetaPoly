@@ -43,7 +43,7 @@ p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_INT,co
 p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_SLOPE,color=season,shape=group), size=5, alpha=0.7) + 
   xlab('Date') + ylab('Model Slope') + scale_color_jco() + theme_minimal() 
 p3 = ggplot(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group)) + geom_point(size=5, alpha=0.7) + 
-  xlab('log(Seq. depth)') + ylab('SNP density') + geom_smooth(formula = 'y ~ log(x):color -1',method='lm',se=F) + scale_color_jco() + theme_minimal() 
+  xlab('log(Seq. depth)') + ylab('SNP density') + geom_smooth(method='lm',se=F) + scale_color_jco() + theme_minimal() 
 
 ggarrange(p1,p2,p3, nrow = 3,ncol=1,align='h', common.legend = TRUE, legend = 'right', heights = c(2, 2, 4))
 ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 8)
