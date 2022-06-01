@@ -136,8 +136,6 @@ SummariseSamples <- function(poly_summary, val_depth){
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_cons =  weighted.mean(poly_summary$Cons_index[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     
-
-    
     sample_df = rbind(sample_df, data.frame(sample=sample,
                                             MEAN_PIP=mean_pip,
                                             MEAN_CONS_I=mean_cons,
