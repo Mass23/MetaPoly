@@ -113,7 +113,7 @@ PolySummary <- function(data, samp_vec, n_cores){
 
 
 ModelPoly <- function(data){
-  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH) -1, data = data)
+  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH) - 1 | log(DEPTH), data = data)
   intercept = coef(model_res, model = "count")['(Intercept)']
   slope = coef(model_res, model = "count")['log(DEPTH)']
   return(list(intercept = intercept, slope = slope))}
