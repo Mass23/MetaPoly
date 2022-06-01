@@ -95,7 +95,7 @@ PlotPolyCorr <- function(res_df, coefs_df, plots_name, boolean_var = TRUE){
 #' @export
 CalcEnrichment <- function(gff, gene_list){
   cog_table = read.delim('data/cog-20.def.tab', sep='\t', header = F)
-  for (i in 1:nrow(cog_func)){
+  for (i in 1:nrow(cog_table)){
     row = cog_table[i,]
     if (length(strsplit(row$V2,'')[[1]]) > 1){
         others = strsplit(row$V2,'')[[1]][2:length(strsplit(row$V2,'')[[1]])]

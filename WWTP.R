@@ -42,20 +42,22 @@ p1 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_INT,co
   xlab('') + ylab('Model Intercept') + scale_color_jco() + theme_minimal() + theme(axis.text.x = element_blank()) 
 p2 = ggplot() + geom_point(mt_samples$table, mapping = aes(x=date,y=MODEL_SLOPE,color=season,shape=group), size=5, alpha=0.7) + 
   xlab('Date') + ylab('Model Slope') + scale_color_jco() + theme_minimal() 
+p3 = ggplot(mt_samples$table, mapping = aes(x=log(MEAN_DEPTH),y=MEAN_SNP_DEN,color=season,shape=group)) + geom_point(size=5, alpha=0.7) + 
+  xlab('log(Seq. depth)') + ylab('SNP density') + geom_smooth(formula = 'y ~ log(x):color -1',method='lm',se=F) + scale_color_jco() + theme_minimal() 
 
-ggarrange(p1,p2,nrow = 2,ncol=1,align='h', common.legend = TRUE, legend = 'right')
-ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 5)
+ggarrange(p1,p2,p3, nrow = 3,ncol=1,align='h', common.legend = TRUE, legend = 'right', heights = c(2, 2, 4))
+ggsave('figures/fig1_WWTP_poly_summary.jpg', width=7,height = 8)
 
 # 3. data analysis
-mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season)
-summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.05, r2 = 0.1986
+mod_snp_n_all = lm(data=mt_samples$table, MEAN_SNP_DEN ~ log(MEAN_DEPTH):season -1)
+summary(mod_snp_n_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.7588
 mod_snp_n_shift_autumn = lm(data=mt_samples$table[mt_samples$table$season == 'Autumn',], MEAN_SNP_DEN ~ log(MEAN_DEPTH) + group)
-summary(mod_snp_n_shift_autumn) # shift p = 0.000732    , adj. r2 = 0.9458
+summary(mod_snp_n_shift_autumn) # shift p = 4.06e-08   , adj. r2 = 0.9995
 
 mod_ndiv_all = lm(data=mt_samples$table, MEAN_PIP ~ log(MEAN_DEPTH):season)
-summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.67
+summary(mod_ndiv_all) # all seasons:log(DEPTH) interactions p < 0.0001, r2 = 0.9261
 mod_ndiv_shift = lm(data=mt_samples$table[mt_samples$table$season %in% c('Autumn'),], MEAN_PIP ~ log(MEAN_DEPTH) + group)
-summary(mod_ndiv_shift) # shift p = 1.57e-05 , adj. r2 = 0.9968 
+summary(mod_ndiv_shift) # shift p = 0.09277 , adj. r2 = 0.09277 
 
 ######################################################################################################
 # POLYCORR

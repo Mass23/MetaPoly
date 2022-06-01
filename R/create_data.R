@@ -113,7 +113,7 @@ PolySummary <- function(data, samp_vec, n_cores){
 
 
 ModelPoly <- function(data){
-  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH), data = data)
+  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH) -1, data = data)
   intercept = coef(model_res, model = "count")['(Intercept)']
   slope = coef(model_res, model = "count")['log(DEPTH)']
   return(list(intercept = intercept, slope = slope))}
@@ -125,6 +125,7 @@ ModelPoly <- function(data){
 #'
 #' @export
 SummariseSamples <- function(poly_summary, val_depth){
+  poly_model = ModelPoly(poly_summary[poly_summary$sample == sample,])
   genes_to_keep = c()
   for (gene in unique(poly_summary$gene_id)){
     if (sum(is.na(poly_summary$DEPTH[poly_summary$gene_id == gene])) == 0){
@@ -139,7 +140,7 @@ SummariseSamples <- function(poly_summary, val_depth){
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_cons =  weighted.mean(poly_summary$Cons_index[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     
-    poly_model = ModelPoly(poly_summary[poly_summary$sample == sample,])
+
     
     sample_df = rbind(sample_df, data.frame(sample=sample,
                                             MEAN_PIP=mean_pip,
