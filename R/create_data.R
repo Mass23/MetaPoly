@@ -53,13 +53,7 @@ GetGenesData <- function(gff, vcf){
 
 ############### 2. POLYMORPHISM SUMMARY ################ 
 CalcPi <- function(ac){return(ifelse(sum(ac > 0) > 1,1-sum((ac/sum(ac))**2), NA))}
-CalcMAJF <- function(ac){return(max(ac / sum(ac)))}
-  
-#if(sum(ac > 0) > 1){
-#     af = ac / sum(ac)
-#     
-#     #return(mean(sample(1:length(af), 10000, prob = af, replace = T) != sample(1:length(af), 10000, prob = af, replace = T)))}
-# else{return(0)}}
+CalcMAJF <- function(ac){return(max(ac / sum(ac)))} 
 
 GetSnpData <- function(gene_data){
   depth = colMeans(apply(gene_data, c(1,2), function(ac) sum(unlist(ac))), na.rm = T)
@@ -113,10 +107,12 @@ PolySummary <- function(data, samp_vec, n_cores){
 
 
 ModelPoly <- function(data){
-  model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH) - 1 | log(DEPTH), data = data)
-  intercept = coef(model_res, model = "count")['(Intercept)']
-  slope = coef(model_res, model = "count")['log(DEPTH)']
-  return(list(intercept = intercept, slope = slope))}
+  #model_res = pscl::zeroinfl(SNP_N ~ log(DEPTH) - 1 | log(DEPTH), data = data)
+  model_res = glm(data = data, formula = SNP_N ~ DEPTH -1, family=poisson())
+  coef = model_res$coefficients['DEPTH']
+  #intercept = coef(model_res, model = "count")['(Intercept)']
+  #slope = coef(model_res, model = "count")['log(DEPTH)']
+  return(list(coef = coef))}
 
 #' SummariseSamples
 #'
@@ -148,6 +144,5 @@ SummariseSamples <- function(poly_summary, val_depth){
                                             MEAN_SNP_DEN=mean_snp_den,
                                             MEAN_DEPTH=mean_depth,
                                             MEAN_MAJF=mean_majf,
-                                            MODEL_INT=poly_model$intercept,
-                                            MODEL_SLOPE=poly_model$slope))}
+                                            MODEL_COEF=poly_model$coef))}
   return(list(table=sample_df,n_genes=length(genes_to_keep)))}
