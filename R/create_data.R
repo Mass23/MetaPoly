@@ -121,7 +121,6 @@ ModelPoly <- function(data){
 #'
 #' @export
 SummariseSamples <- function(poly_summary, val_depth){
-  poly_model = ModelPoly(poly_summary[poly_summary$sample == sample,])
   genes_to_keep = c()
   for (gene in unique(poly_summary$gene_id)){
     if (sum(is.na(poly_summary$DEPTH[poly_summary$gene_id == gene])) == 0){
@@ -130,12 +129,13 @@ SummariseSamples <- function(poly_summary, val_depth){
   poly_summary = poly_summary[poly_summary$gene_id %in% genes_to_keep,]
   sample_df = data.frame()
   for (sample in unique(poly_summary$sample)){
+    poly_model = ModelPoly(poly_summary[poly_summary$sample == sample,])
     mean_snp_den =  weighted.mean(poly_summary$SNP_N[poly_summary$sample == sample] / poly_summary$gene_length[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_pip =  weighted.mean(poly_summary$PIP[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_depth =  weighted.mean(poly_summary$DEPTH[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_majf =  weighted.mean(poly_summary$MAJF[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
     mean_cons =  weighted.mean(poly_summary$Cons_index[poly_summary$sample == sample], poly_summary$gene_length[poly_summary$sample == sample], na.rm=T)
-    
+
     sample_df = rbind(sample_df, data.frame(sample=sample,
                                             MEAN_PIP=mean_pip,
                                             MEAN_CONS_I=mean_cons,
